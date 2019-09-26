@@ -307,6 +307,7 @@ struct background
 
   //@}
 
+
   /**
    *@name - some flags needed for calling background functions
    */
@@ -335,6 +336,17 @@ struct background
   ErrorMsg error_message; /**< zone for writing error messages */
 
   //@}
+
+  /** @name - deisgner parameters */
+
+  //@{
+
+  short   has_dsg;        /**< presence of designer terms  */
+  double  *dsg_bin_ends; /**< vector of location of ends of designer bins in log(z) */
+  double  *dsg_parm;     /**< vecotr of designer parameters */
+
+  //@}
+
 };
 
 /**
