@@ -341,9 +341,11 @@ struct background
 
   //@{
 
-  short   has_dsg;        /**< presence of designer terms  */
-  double  *dsg_bin_ends; /**< vector of location of ends of designer bins in log(z) */
-  double  *dsg_parm;     /**< vecotr of designer parameters */
+  short   has_dsg;             /**< presence of designer terms  */
+  int     dsg_num_of_bin_ends; /**< the number of designer bin ends */
+  double  *dsg_bin_ends;       /**< vector of location of ends of designer bins in log(z) */
+  int     dsg_num_of_param;      /**< the number of designer bins */
+  double  *dsg_param;           /**< vecotr of designer parameters */
 
   //@}
 

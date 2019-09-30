@@ -1116,6 +1116,36 @@ int input_read_parameters(
     }
   }
 
+  /* designer additions */
+  class_call(parser_read_list_of_doubles(pfc,
+                                         "dsg_bin_ends",
+                                         &(pba->dsg_num_of_bin_ends),
+                                         &(pba->dsg_bin_ends),
+                                         &flag1,
+                                         errmsg),
+             errmsg,errmsg);
+
+  class_call(parser_read_list_of_doubles(pfc,
+                                         "dsg_param",
+                                         &(pba->dsg_num_of_param),
+                                         &(pba->dsg_param),
+                                         &flag2,
+                                         errmsg),
+             errmsg,errmsg);
+  class_test(flag1!=flag2,
+             errmsg,
+             "Exclusively designer bin ends or designer parameters are present, include both or neither. Check your .ini file.");
+
+  class_test((pba->dsg_num_of_bin_ends)-1 != pba->dsg_num_of_param,
+             errmsg,
+           "Number of designer bins and parameters are missmatched. Found %d bins and %d parameters.  Check your .ini file.",(pba->dsg_num_of_bin_ends)-1,pba->dsg_num_of_param);
+
+if (flag1==flag2) {
+  pba->has_dsg=1;
+} else {
+  pba->has_dsg=0;
+}
+
   /** (b) assign values to thermodynamics cosmological parameters */
 
   /** - primordial helium fraction */
