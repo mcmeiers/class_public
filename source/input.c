@@ -1139,6 +1139,10 @@ if(flag1==_TRUE_){
     class_test((pba->dsg_num_of_bin_ends)-1 != pba->dsg_num_of_param,
                 errmsg,
                 "Number of designer bins and parameters are missmatched. Found %d bins and %d parameters.  Check your .ini file.",(pba->dsg_num_of_bin_ends)-1,pba->dsg_num_of_param);
+                for (size_t i = 0; i < pba->dsg_num_of_param; i++) {
+                  param1=pba->dsg_param[i];
+                  class_test((param1>=0)&&(param1<=1),errmsg,"Designer parameter %d is outside of the 0 to 1 range. Check your .ini file.",i+1);
+                }
 }
 
 if (flag1==_TRUE_) {
