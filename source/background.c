@@ -422,6 +422,9 @@ int background_functions(
       only place where the Friedmann equation is assumed. Remember
       that densities are all expressed in units of \f$ [3c^2/8\pi G] \f$, ie
       \f$ \rho_{class} = [8 \pi G \rho_{physical} / 3 c^2]\f$ */
+
+  /** need designer*/
+
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
   /** - compute derivative of H with respect to conformal time */
