@@ -343,9 +343,14 @@ struct background
 
   short   has_dsg;             /**< presence of designer terms  */
   int     dsg_num_of_bin_ends; /**< the number of designer bin ends */
-  double  *dsg_bin_ends;       /**< vector of location of ends of designer bins as values of log(a) */
-  int     dsg_num_of_param;      /**< the number of designer bins */
-  double  *dsg_param;           /**< vecotr of designer parameters */
+  double  *dsg_bin_ends;       /**< vector of location of ends of designer bins as values of log_10(a) */
+  int     dsg_num_of_param;    /**< the number of designer bins */
+  double  *dsg_param;          /**< vecotr of designer parameters */
+  double  dsg_tau;
+//  double  dsg;
+  int     index_bg_dsg_rho;    /**< index for storage of energy dendisty of the designer fluid */
+  int     index_bg_dsg_delta;  /**< index for storage of the designer parameter of the designer fluid */
+  int     index_bg_dsg_w;      /**< index for storage of the state parameter of the designer fluid */
 
   //@}
 

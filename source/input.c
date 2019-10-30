@@ -1148,13 +1148,14 @@ if(flag1==_TRUE_){
                 param1=pba->dsg_bin_ends[0];
                 for (size_t i = 1; i < pba->dsg_num_of_bin_ends; i++) {
                   param2=pba->dsg_bin_ends[i];
-                  class_test(param1<param2,errmsg,"Designer bin ends number %d and %d are out of cronological order, bins should be decreasing values of Log(z). Check your .ini file.",i,i+1);
+                  class_test(param1>param2,errmsg,"Designer bin ends number %d and %d are out of cronological order, bins should be decreasing values of Log(z). Check your .ini file.",i,i+1);
                   param1=param2;
                 }
 }
 
 if (flag1==_TRUE_) {
   pba->has_dsg=1;
+  pba->dsg_tau=0.07;
 } else {
   pba->has_dsg=0;
 }

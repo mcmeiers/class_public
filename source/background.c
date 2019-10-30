@@ -423,8 +423,33 @@ int background_functions(
       that densities are all expressed in units of \f$ [3c^2/8\pi G] \f$, ie
       \f$ \rho_{class} = [8 \pi G \rho_{physical} / 3 c^2]\f$ */
 
-  /** need designer*/
+  /** designer additions not optimized and some calculations could be encapsulated */
+  if(pba->has_dsg == _TRUE_){
+    double a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[0]),1/pba->dsg_tau);
+    double dist_i = 1/(1+a_ratio_smthd_i);
+    double dsg_delta=pba->dsg_param[0]*-1*dist_i;
+    double dsg_ddelta_over_dlna=pba->dsg_param[0]*pow(dist_i,2)*a_ratio_smthd_i/pba->dsg_tau;
+   for (size_t i = 1; i < pba->dsg_num_of_param-1; i++) {
+     a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[i]),1/pba->dsg_tau);
+     dist_i = 1/(1+a_ratio_smthd_i);
+     dsg_delta+=dist_i*(pba->dsg_param[i-1]-pba->dsg_param[i]);
+     dsg_ddelta_over_dlna+=(pba->dsg_param[i]-pba->dsg_param[i-1])*pow(dist_i,2)*a_ratio_smthd_i/pba->dsg_tau;
+   }
+   a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[pba->dsg_num_of_param-1]),1/pba->dsg_tau);
+   dist_i = 1/(1+a_ratio_smthd_i);
+   dsg_delta+=dist_i*pba->dsg_param[pba->dsg_num_of_param-1];
+   dsg_ddelta_over_dlna+=-1*pba->dsg_param[pba->dsg_num_of_param-1]*pow(dist_i,2)*a_ratio_smthd_i/pba->dsg_tau;
+   double dsg_Q=(rho_tot-pvecback[pba->index_bg_rho_lambda])/pvecback[pba->index_bg_rho_lambda];
+   double dsg_w_bg=(p_tot+ pvecback[pba->index_bg_rho_lambda])/(rho_tot-pvecback[pba->index_bg_rho_lambda]);
+   pvecback[pba->index_bg_dsg_delta]=dsg_delta;
+   pvecback[pba->index_bg_dsg_w]=dsg_Q*dsg_delta/(1+dsg_delta*(1+dsg_Q))*(1+dsg_w_bg)-(1+dsg_Q)/(3*(1+dsg_delta*(1+dsg_Q)))*dsg_ddelta_over_dlna-1;
+   pvecback[pba->index_bg_dsg_rho] = rho_tot*dsg_delta;
+   rho_tot += pvecback[pba->index_bg_dsg_rho];
+   p_tot+=pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+   /** need to add index for dsg terms */
 
+
+ }
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
   /** - compute derivative of H with respect to conformal time */
@@ -866,6 +891,11 @@ int background_indices(
   if (pba->sgnK != 0)
     pba->has_curvature = _TRUE_;
 
+  /** Designer additions */
+  pba->has_dsg=_FALSE_;
+  if(pba->dsg_bin_ends !=NULL)
+    pba->has_dsg = _TRUE_;
+
   /** - initialize all indices */
 
   index_bg=0;
@@ -927,6 +957,11 @@ int background_indices(
   /* - put here additional ingredients that you want to appear in the
      normal vector */
   /*    */
+  class_define_index(pba->index_bg_dsg_rho,pba->has_dsg,index_bg,1);
+  class_define_index(pba->index_bg_dsg_w,pba->has_dsg,index_bg,1);
+  class_define_index(pba->index_bg_dsg_delta,pba->has_dsg,index_bg,1);
+
+
   /*    */
 
   /* - end of indices in the normal vector of background values */
@@ -2197,6 +2232,10 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"gr.fac. D",_TRUE_);
   class_store_columntitle(titles,"gr.fac. f",_TRUE_);
 
+  class_store_columntitle(titles,"(.)delta_dsg",pba->has_dsg);
+  class_store_columntitle(titles,"(.)w_dsg",pba->has_dsg);
+  class_store_columntitle(titles,"(.)rho_dsg",pba->has_dsg);
+
   return _SUCCESS_;
 }
 
@@ -2248,6 +2287,10 @@ int background_output_data(
 
     class_store_double(dataptr,pvecback[pba->index_bg_D],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_f],_TRUE_,storeidx);
+
+    class_store_double(dataptr,pvecback[pba->index_bg_dsg_delta],pba->has_dsg,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dsg_w],pba->has_dsg,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dsg_rho],pba->has_dsg,storeidx);
   }
 
   return _SUCCESS_;
