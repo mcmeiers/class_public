@@ -1140,24 +1140,31 @@ if(flag1==_TRUE_){
                 errmsg,
                 "Number of designer bins and parameters are missmatched. Found %d bins and %d parameters.  Check your .ini file.",(pba->dsg_num_of_bin_ends)-1,pba->dsg_num_of_param);
 
-                for (size_t i = 0; i < pba->dsg_num_of_param; i++) {
-                  param1=pba->dsg_param[i];
-                  class_test((param1<0)||(param1>1),errmsg,"Designer parameter %d read as %g and is outside of the 0 to 1 range. Check your .ini file.",i+1,param1);
-                }
+    for (size_t i = 0; i < pba->dsg_num_of_param; i++) {
+        param1=pba->dsg_param[i];
+        class_test((param1<0)||(param1>1),errmsg,"Designer parameter %d read as %g and is outside of the 0 to 1 range. Check your .ini file.",i+1,param1);
+    }
 
-                param1=pba->dsg_bin_ends[0];
-                for (size_t i = 1; i < pba->dsg_num_of_bin_ends; i++) {
-                  param2=pba->dsg_bin_ends[i];
-                  class_test(param1>param2,errmsg,"Designer bin ends number %d and %d are out of cronological order, bins should be decreasing values of Log(z). Check your .ini file.",i,i+1);
-                  param1=param2;
-                }
+    param1=pba->dsg_bin_ends[0];
+    for (size_t i = 1; i < pba->dsg_num_of_bin_ends; i++) {
+         param2=pba->dsg_bin_ends[i];
+         class_test(param1>param2,errmsg,"Designer bin ends number %d and %d are out of cronological order, bins should be decreasing values of Log(z). Check your .ini file.",i,i+1);
+        param1=param2;
+    }
+
+    pba->has_dsg=1;
+    pba->dsg_tau=0.2;
+
+    class_call(parser_read_double(pfc,"dsg_c_eff",&(pba->dsg_c_eff),&flag1,errmsg),errmsg,errmsg);
+    if(flag1==_FALSE_)pba->dsg_c_eff=1;
+    class_call(parser_read_double(pfc,"dsg_c_vis",&(pba->dsg_c_vis),&flag1,errmsg),errmsg,errmsg);
+    if(flag1==_FALSE_)pba->dsg_c_vis=0;
 }
-
-if (flag1==_TRUE_) {
-  pba->has_dsg=1;
-  pba->dsg_tau=0.07;
-} else {
+else {
   pba->has_dsg=0;
+}
+if (flag1==_TRUE_) {
+
 }
 
   /** (b) assign values to thermodynamics cosmological parameters */

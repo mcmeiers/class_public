@@ -312,6 +312,14 @@ struct perturbs
 
   int * tp_size; /**< number of types tp_size[index_md] included in computation for each mode */
 
+  /** Designer Additions */
+  short has_source_delta_dsg;
+  short has_source_theta_dsg;
+  short has_source_pi_dsg;
+  int index_delta_dsg;
+  int index_theta_dsg;
+  int index_pi_dsg;
+  /** End of Additions */
   //@}
 
   /** @name - list of k values for each mode */
@@ -417,6 +425,13 @@ struct perturb_vector
   int index_pt_shear_ur; /**< shear of ultra-relativistic neutrinos/relics */
   int index_pt_l3_ur;    /**< l=3 of ultra-relativistic neutrinos/relics */
   int l_max_ur;          /**< max momentum in Boltzmann hierarchy (at least 3) */
+
+  /** Designer Additions */
+  int index_pt_delta_dsg;
+  int index_pt_theta_dsg;
+  int index_pt_pi_dsg;
+  /** End of Additions */
+
 /* perturbed recombination */
   int index_pt_perturbed_recombination_delta_temp;		/**< Gas temperature perturbation */
   int index_pt_perturbed_recombination_delta_chi;		/**< Inionization fraction perturbation */
