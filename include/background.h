@@ -347,10 +347,13 @@ struct background
   int     dsg_num_of_param;    /**< the number of designer bins */
   double  *dsg_param;          /**< vecotr of designer parameters */
   double  dsg_tau;
-//  double  dsg;
   int     index_bg_dsg_rho;    /**< index for storage of energy dendisty of the designer fluid */
   int     index_bg_dsg_delta;  /**< index for storage of the designer parameter of the designer fluid */
   int     index_bg_dsg_w;      /**< index for storage of the state parameter of the designer fluid */
+  int     index_bg_dsg_dw_over_dlna;      /**< index for storage of the state parameter of the designer fluid */
+
+  double  dsg_c_eff;          /**<  the rest frame speed of sound */
+  double  dsg_c_vis;          /**<  the viscosity parameter */
 
   //@}
 
