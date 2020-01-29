@@ -423,11 +423,11 @@ int background_functions(
   /** Assumes K=0 and only matter, radiatoin and Lambda */
   if(pba->has_dsg == _TRUE_){
     double a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[0]),1/pba->dsg_tau);
-    double dist_i = 1/(1+a_ratio_smthd_i);
+    double dist_i = 1./(1.+a_ratio_smthd_i);
     double dist_i_sqd = pow(dist_i,2);
-    double dsg_delta=-1*pba->dsg_param[0]*dist_i;
-    double dsg_ddelta_over_dlna=-1*pba->dsg_param[0]*(-1*dist_i_sqd*a_ratio_smthd_i/pba->dsg_tau);
-    double dsg_d2delta_over_dlna2=-1*pba->dsg_param[0]*(-1+2*dist_i*a_ratio_smthd_i)*a_ratio_smthd_i*dist_i_sqd/pow(pba->dsg_tau,2);
+    double dsg_delta=-1.*pba->dsg_param[0]*dist_i;
+    double dsg_ddelta_over_dlna=-1.*pba->dsg_param[0]*(-1*dist_i_sqd*a_ratio_smthd_i/pba->dsg_tau);
+    double dsg_d2delta_over_dlna2=-1.*pba->dsg_param[0]*(-1+2*dist_i*a_ratio_smthd_i)*a_ratio_smthd_i*dist_i_sqd/pow(pba->dsg_tau,2);
    for (size_t i = 1; i < pba->dsg_num_of_param-1; i++) {
      a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[i]),1/pba->dsg_tau);
      dist_i = 1/(1+a_ratio_smthd_i);
@@ -443,16 +443,16 @@ int background_functions(
    dsg_ddelta_over_dlna+=pba->dsg_param[pba->dsg_num_of_param-1]*(-1*dist_i_sqd*a_ratio_smthd_i/pba->dsg_tau);
    dsg_d2delta_over_dlna2+=pba->dsg_param[pba->dsg_num_of_param-1]*(-1+2*dist_i*a_ratio_smthd_i)*a_ratio_smthd_i*dist_i_sqd/pow(pba->dsg_tau,2);
    double dsg_w_bg=-1+((4/3.0)*rho_r+rho_m)/rho_tot;
+   printf("(%e,%f,%f)\n",a,dsg_w_bg,(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta);
    double dsg_dw_bg_over_dlna=3*pow((dsg_w_bg+1),2)-(16/3.0*rho_r+3*rho_m)/rho_tot;
    pvecback[pba->index_bg_dsg_delta]=dsg_delta;
    pvecback[pba->index_bg_dsg_w]=dsg_w_bg+(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta;
    pvecback[pba->index_bg_dsg_dw_over_dlna]=dsg_dw_bg_over_dlna+(1/3.0)*(pow(dsg_ddelta_over_dlna/dsg_delta,2)+dsg_d2delta_over_dlna2/dsg_delta);
    pvecback[pba->index_bg_dsg_rho] = rho_tot*dsg_delta;
    rho_tot += pvecback[pba->index_bg_dsg_rho];
-   //p_tot+=pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-   //rho_r += rho_r*dsg_delta;
-   //rho_m += rho_m*dsg_delta;
-
+   p_tot += pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+   rho_r += rho_r*dsg_delta;
+   rho_m += rho_m*dsg_delta;
  }
 
   /** - compute expansion rate H from Friedmann equation: this is the

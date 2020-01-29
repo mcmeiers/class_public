@@ -316,9 +316,9 @@ struct perturbs
   short has_source_delta_dsg;
   short has_source_theta_dsg;
   short has_source_pi_dsg;
-  int index_delta_dsg;
-  int index_theta_dsg;
-  int index_pi_dsg;
+  int index_tp_delta_dsg;
+  int index_tp_theta_dsg;
+  int index_tp_pi_dsg;
   /** End of Additions */
   //@}
 

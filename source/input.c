@@ -1154,18 +1154,28 @@ if(flag1==_TRUE_){
 
     pba->has_dsg=1;
     pba->dsg_tau=0.2;
+    class_read_double("dsg_tau",pba->dsg_tau); // Reads tau value from input if provided
 
-    class_call(parser_read_double(pfc,"dsg_c_eff",&(pba->dsg_c_eff),&flag1,errmsg),errmsg,errmsg);
-    if(flag1==_FALSE_)pba->dsg_c_eff=1;
-    class_call(parser_read_double(pfc,"dsg_c_vis",&(pba->dsg_c_vis),&flag1,errmsg),errmsg,errmsg);
-    if(flag1==_FALSE_)pba->dsg_c_vis=0;
+    pba->has_nap_dsg=_FALSE_;
+    class_call(parser_read_string(pfc,"nap",&string1,&flag1,errmsg),errmsg,errmsg);
+    if (flag1 == _TRUE_) {
+      /* if non-adiabatic pressure is not specified, the default is has_nap_dsg=_FALSE_; */
+      if ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))
+        pba->has_nap_dsg=_TRUE_;
+    }
+
+    if(pba->has_nap_dsg==_TRUE_){
+      pba->dsg_c_eff2=1;
+      class_read_double("dsg_c_eff2",pba->dsg_c_eff2); // Reads c_eff^2 if provided, otherise defaults to c_eff^2=1
+    }
+
+    pba->dsg_c_vis2=0;
+    class_read_double("dsg_c_vis2",pba->dsg_c_vis2); // Reads c_vis^2 if provided, otherise defaults to c_vis^2=0
 }
 else {
   pba->has_dsg=0;
 }
-if (flag1==_TRUE_) {
-
-}
+/* End of Additions */
 
   /** (b) assign values to thermodynamics cosmological parameters */
 

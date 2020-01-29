@@ -26,7 +26,6 @@
 
 #include "perturbations.h"
 
-
 /**
  * Source function \f$ S^{X} (k, \tau) \f$ at a given conformal time tau.
  *
@@ -610,6 +609,12 @@ int perturb_indices_of_perturbs(
   ppt->has_source_eta = _FALSE_;
   ppt->has_source_eta_prime = _FALSE_;
 
+  /* Designer Additions */
+  ppt->has_source_delta_dsg = _FALSE_;
+  ppt->has_source_theta_dsg = _FALSE_;
+  ppt->has_source_pi_dsg = _FALSE_;
+  /* End of Additions */
+
   /** - source flags and indices, for sources that all modes have in
       common (temperature, polarization, ...). For temperature, the
       term t2 is always non-zero, while other terms are non-zero only
@@ -689,6 +694,11 @@ int perturb_indices_of_perturbs(
           ppt->has_source_delta_dr = _TRUE_;
         if (pba->has_ncdm == _TRUE_)
           ppt->has_source_delta_ncdm = _TRUE_;
+        // Designer Additions
+        if (pba->has_dsg == _TRUE_)
+          ppt->has_source_delta_dsg = _TRUE_;
+        // End of Additions
+
         // Thanks to the following lines, (phi,psi) are also stored as sources
         // (Obtained directly in newtonian gauge, infereed from (h,eta) in synchronous gauge).
         // If density transfer functions are requested in the (default) CLASS format,
@@ -715,6 +725,11 @@ int perturb_indices_of_perturbs(
           ppt->has_source_theta_dr = _TRUE_;
         if (pba->has_ncdm == _TRUE_)
           ppt->has_source_theta_ncdm = _TRUE_;
+        // Designer Additons
+        if (pba->has_dsg == _TRUE_){
+          ppt->has_source_theta_dsg = _TRUE_;
+        }
+        // End of Additions
       }
 
       if (ppt->has_cl_number_count == _TRUE_) {
@@ -755,6 +770,13 @@ int perturb_indices_of_perturbs(
         }
       }
 
+      // Designer Additions
+      if(pba->has_dsg == _TRUE_ ){
+        if(pba->dsg_c_vis2 != 0)
+          ppt->has_source_pi_dsg;
+      }
+      // End of Additons
+
       index_type = index_type_common;
       class_define_index(ppt->index_tp_t0,         ppt->has_source_t,         index_type,1);
       class_define_index(ppt->index_tp_t1,         ppt->has_source_t,         index_type,1);
@@ -788,6 +810,11 @@ int perturb_indices_of_perturbs(
       class_define_index(ppt->index_tp_h_prime,    ppt->has_source_h_prime,   index_type,1);
       class_define_index(ppt->index_tp_eta,        ppt->has_source_eta,       index_type,1);
       class_define_index(ppt->index_tp_eta_prime,  ppt->has_source_eta_prime, index_type,1);
+      /* Designer Additions */
+      class_define_index(ppt->index_tp_delta_dsg,  ppt->has_source_delta_dsg, index_type,1);
+      class_define_index(ppt->index_tp_theta_dsg,  ppt->has_source_theta_dsg, index_type,1);
+      class_define_index(ppt->index_tp_pi_dsg,     ppt->has_source_pi_dsg,    index_type,1);
+      /* End of Additions */
       ppt->tp_size[index_md] = index_type;
 
       class_test(index_type == 0,
@@ -2553,6 +2580,12 @@ int perturb_prepare_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "delta_scf", pba->has_scf);
       class_store_columntitle(ppt->scalar_titles, "theta_scf", pba->has_scf);
 
+      /* Designer Additons */
+      class_store_columntitle(ppt->scalar_titles, "delta_dsg", pba->has_dsg);
+      class_store_columntitle(ppt->scalar_titles, "theta_dsg", pba->has_dsg);
+      class_store_columntitle(ppt->scalar_titles, "pi_dsg",    ppt->has_source_pi_dsg);
+      /* End of Additions */
+
       ppt->number_of_scalar_titles =
         get_number_of_titles(ppt->scalar_titles);
     }
@@ -2969,7 +3002,7 @@ int perturb_find_approximation_switches(
  * it, defines all indices, and then fills the vector ppw-->pv-->y with
  * the initial conditions defined in perturb_initial_conditions.
  *
- * --> the input pa_old is not set to the NULL pointer and describes
+ * --> the input pa_old is not set to the NULL pointer and describes-
  * some set of approximations:
  *
  * This happens when we need to change approximation scheme while
@@ -3169,6 +3202,14 @@ int perturb_vector_init(
       }
     }
 
+    /* Designer Addtions */
+    if(pba->has_dsg == _TRUE_){
+      class_define_index(ppv->index_pt_delta_dsg,_TRUE_,index_pt,1); /* density of designer material */
+      class_define_index(ppv->index_pt_theta_dsg,_TRUE_,index_pt,1); /* velocity of designer material */
+      class_define_index(ppv->index_pt_pi_dsg,pba->dsg_c_vis2!=0,index_pt,1);    /* anisotropic pressure perturbation of designer material */
+    }
+    /* End of Additions */
+
     /* metric (only quantities to be integrated, not those obeying constraint equations) */
 
     /* metric perturbation eta of synchronous gauge */
@@ -3359,6 +3400,7 @@ int perturb_vector_init(
         }
       }
     }
+
   }
 
   if (_tensors_) {
@@ -3537,6 +3579,16 @@ int perturb_vector_init(
         ppv->y[ppv->index_pt_phi_prime_scf] =
           ppw->pv->y[ppw->pv->index_pt_phi_prime_scf];
       }
+
+      /* Designer Additions */
+      if (pba->has_dsg == _TRUE_) {
+        ppv->y[ppv->index_pt_delta_dsg]=ppw->pv->y[ppw->pv->index_pt_delta_dsg];
+        ppv->y[ppv->index_pt_theta_dsg]=ppw->pv->y[ppw->pv->index_pt_theta_dsg];
+        if(pba->dsg_c_vis2!=0){
+          ppv->y[ppv->index_pt_pi_dsg]=ppw->pv->y[ppw->pv->index_pt_pi_dsg];
+        }
+      }
+      /* End of Additions */
 
       if (ppt->gauge == synchronous)
         ppv->y[ppv->index_pt_eta] =
@@ -4284,6 +4336,15 @@ int perturb_initial_conditions(struct precision * ppr,
       //eta = ppr->curvature_ini * s2_squared * (1.-ktau_two/12./(15.+4.*fracnu)*(15.*s2_squared-10.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
       eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu)*(5.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
 
+      // Designer Additions
+      if(pba->has_dsg==_TRUE_){
+        ppw->pv->y[ppw->pv->index_pt_delta_dsg]= ppw->pv->y[ppw->pv->index_pt_delta_g];
+        ppw->pv->y[ppw->pv->index_pt_theta_dsg]= ppw->pv->y[ppw->pv->index_pt_theta_g]; // Dsg TODO Generalize
+        if(pba->dsg_c_vis2!=0){
+          ppw->pv->y[ppw->pv->index_pt_pi_dsg]= 0; // Dsg TODO Generalize
+        }
+      }
+      // End of Additons
     }
 
     /* isocurvature initial conditions taken from Bucher, Moodely,
@@ -4505,6 +4566,14 @@ int perturb_initial_conditions(struct precision * ppr,
           delta_dr += (-4.*a_prime_over_a + a*pba->Gamma_dcdm*ppw->pvecback[pba->index_bg_rho_dcdm]/ppw->pvecback[pba->index_bg_rho_dr])*alpha;
 
       }
+
+      // Designer Addtions
+      if(pba->has_dsg==_TRUE_){
+        ppw->pv->y[ppw->pv->index_pt_delta_dsg] -= 4.*a_prime_over_a*alpha;
+        ppw->pv->y[ppw->pv->index_pt_theta_dsg] += k*k*alpha; // CHECK
+       //  ppw->pv->y[ppw->pv->index_pt_shear_dsg] unchanged
+      }
+      // End of Additons
 
     } /* end of gauge transformation to newtonian gauge */
 
@@ -5597,6 +5666,19 @@ int perturb_total_stress_energy(
     }
 
     /* add your extra species here */
+    // Designer additions potential problem if used with fld we converte from anisotropic stress to shear
+    if (pba->has_dsg == _TRUE_){
+      ppw->delta_rho += ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
+      ppw->rho_plus_p_theta += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_theta_dsg];
+      if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_pi_dsg];
+      ppw->delta_p += ppw->pvecback[pba->index_bg_dsg_w]*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
+      rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho];
+
+    }
+    else{//printf("(%e,%e,%e,%e)\n",rho_plus_p_tot,ppw->delta_rho,ppw->rho_plus_p_shear,ppw->delta_p);
+        //getchar();
+      }
+    //End of additons
 
     /* fluid contribution */
     if (pba->has_fld == _TRUE_) {
@@ -6267,6 +6349,17 @@ int perturb_sources(
         _set_source_(index_type) = ppw->theta_ncdm[index_type - ppt->index_tp_theta_ncdm1];
       }
     }
+    // Designer additons
+    if (ppt->has_source_delta_dsg == _TRUE_){
+      _set_source_(ppt->index_tp_delta_dsg) = y[ppw->pv->index_pt_delta_dsg];
+    }
+    if (ppt->has_source_theta_dsg == _TRUE_){
+      _set_source_(ppt->index_tp_theta_dsg) = y[ppw->pv->index_pt_theta_dsg];
+    }
+    if (ppt->has_source_pi_dsg == _TRUE_){
+      _set_source_(ppt->index_tp_pi_dsg) = y[ppw->pv->index_pt_pi_dsg];
+    }
+    // end of additons
   }
 
   /** - for tensors */
@@ -6376,6 +6469,10 @@ int perturb_print_variables(double tau,
   /** - ncdm sector ends */
   double phi=0.,psi=0.,alpha=0.;
   double delta_temp=0., delta_chi=0.;
+
+  // Designer additons
+  double delta_dsg=0.,theta_dsg=0.,pi_dsg=0.;
+  // End of additons
 
   double a,a2,H;
   int idx,index_q, storeidx;
@@ -6624,6 +6721,14 @@ int perturb_print_variables(double tau,
       theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
 
     }
+    // Designer Additions
+    if (pba->has_dsg == _TRUE_){
+      delta_dsg = y[ppw->pv->index_pt_delta_dsg];
+      theta_dsg = y[ppw->pv->index_pt_theta_dsg];
+      if(pba->dsg_c_vis2 !=0)
+        pi_dsg = y[ppw->pv->index_pt_pi_dsg];
+    }
+    // End of Additions
 
     /* converting synchronous variables to newtonian ones */
     if (ppt->gauge == synchronous) {
@@ -6667,6 +6772,13 @@ int perturb_print_variables(double tau,
         delta_scf += alpha*(-3.0*H*(1.0+pvecback[pba->index_bg_p_scf]/pvecback[pba->index_bg_rho_scf]));
         theta_scf += k*k*alpha;
       }
+
+      // Designer Additions
+      if (pba->has_dsg == _TRUE_){
+        delta_dsg -= 3.*(1+pvecback[pba->index_bg_dsg_w])*pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+        theta_dsg += k*k*alpha;
+      }
+      // End of Additions
 
     }
 
@@ -6729,6 +6841,14 @@ int perturb_print_variables(double tau,
     /* Scalar field scf*/
     class_store_double(dataptr, delta_scf, pba->has_scf, storeidx);
     class_store_double(dataptr, theta_scf, pba->has_scf, storeidx);
+
+    // Designer Additions
+    if (pba->has_dsg == _TRUE_){
+    class_store_double(dataptr, delta_dsg, _TRUE_, storeidx);
+    class_store_double(dataptr, theta_dsg, _TRUE_, storeidx);
+    if(pba->dsg_c_vis2 !=0) class_store_double(dataptr, pi_dsg, _TRUE_, storeidx);
+    }
+    // End of Additions
 
     //fprintf(ppw->perturb_output_file,"\n");
 
@@ -6922,7 +7042,7 @@ int perturb_derivs(double tau,
   double delta_b,theta_b;
   double cb2,cs2,ca2;
   double metric_continuity=0.,metric_euler=0.,metric_shear=0.,metric_ufa_class=0.;
-
+  double metric_shear_prime=0.; //Designer reintroduction
   /* perturbed recombination (just to simplify the notation) */
 
   double H0=0.,Nnow=0.,n_H=0.,fHe=0.;
@@ -6949,6 +7069,10 @@ int perturb_derivs(double tau,
 
   /* for use with dcdm and dr */
   double f_dr, fprime_dr;
+
+  // Desinger Additions
+  double delta_dsg_rest, c_dsg2;
+  // End of Additons
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
@@ -7095,7 +7219,7 @@ int perturb_derivs(double tau,
       metric_continuity = pvecmetric[ppw->index_mt_h_prime]/2.;
       metric_euler = 0.;
       metric_shear = k2 * pvecmetric[ppw->index_mt_alpha];
-      //metric_shear_prime = k2 * pvecmetric[ppw->index_mt_alpha_prime];
+      metric_shear_prime = k2 * pvecmetric[ppw->index_mt_alpha_prime]; // Designer Uncommented
       metric_ufa_class = pvecmetric[ppw->index_mt_h_prime]/2.;
     }
 
@@ -7104,7 +7228,7 @@ int perturb_derivs(double tau,
       metric_continuity = -3.*pvecmetric[ppw->index_mt_phi_prime];
       metric_euler = k2*pvecmetric[ppw->index_mt_psi];
       metric_shear = 0.;
-      //metric_shear_prime = 0.;
+      metric_shear_prime = 0.;  // Designer Uncommented
       metric_ufa_class = -6.*pvecmetric[ppw->index_mt_phi_prime];
     }
 
@@ -7609,6 +7733,24 @@ int perturb_derivs(double tau,
       }
     }
 
+    // Designer Additions
+    if (pba->has_dsg == _TRUE_) {
+      delta_dsg_rest=y[pv->index_pt_delta_dsg]+3.*a_prime_over_a*(1+pvecback[pba->index_bg_dsg_w])*y[pv->index_pt_theta_dsg]/k2;
+      c_dsg2=pvecback[pba->index_bg_dsg_w]-pvecback[pba->index_bg_dsg_dw_over_dlna]/(1+pvecback[pba->index_bg_dsg_w])/3;
+      //delta_dsg evolution
+      dy[pv->index_pt_delta_dsg] = y[pv->index_pt_delta_dsg]*pvecback[pba->index_bg_dsg_dw_over_dlna]*a_prime_over_a/(1+pvecback[pba->index_bg_dsg_w])-(1+pvecback[pba->index_bg_dsg_w])*(y[pv->index_pt_theta_dsg]+metric_continuity);
+      if (pba->has_nap_dsg == _TRUE_) dy[pv->index_pt_delta_dsg] -= 3*a_prime_over_a*(pba->dsg_c_eff2-c_dsg2)*delta_dsg_rest;
+      //theta_dsg evolution
+      dy[pv->index_pt_theta_dsg] = -1.*a_prime_over_a*(1-3*c_dsg2)*y[pv ->index_pt_theta_dsg]+c_dsg2/(1+pvecback[pba->index_bg_dsg_w])*k2*y[pv->index_pt_delta_dsg] + metric_euler;
+      if (pba->has_nap_dsg == _TRUE_) dy[pv->index_pt_theta_dsg]+= (pba->dsg_c_eff2-c_dsg2)*delta_dsg_rest*k2/(1+pvecback[pba->index_bg_dsg_w]);
+      if (pba->dsg_c_vis2 != 0.) dy[pv->index_pt_theta_dsg]-= 2./3.*pvecback[pba->index_bg_dsg_w]/(1+pvecback[pba->index_bg_dsg_w])*k2*s2_squared*y[pv->index_pt_pi_dsg];
+      //pi_dsg evolution
+      //printf("(%e,%e,%e,%e)\n",dy[pv->index_pt_delta_dsg],y[pv->index_pt_theta_dsg],dy[pv->index_pt_delta_dsg],dy[pv->index_pt_theta_dsg]);
+      if (pba->dsg_c_vis2 != 0.){
+        dy[pv->index_pt_pi_dsg] =-3.*a_prime_over_a*y[pv->index_pt_pi_dsg]+4.*pba->dsg_c_vis2*(k*y[pv->index_pt_theta_dsg]+metric_shear_prime);
+      }
+    }
+    // End of Addtions
     /** - ---> metric */
 
     /** - ---> eta of synchronous gauge */

@@ -352,8 +352,9 @@ struct background
   int     index_bg_dsg_w;      /**< index for storage of the state parameter of the designer fluid */
   int     index_bg_dsg_dw_over_dlna;      /**< index for storage of the state parameter of the designer fluid */
 
-  double  dsg_c_eff;          /**<  the rest frame speed of sound */
-  double  dsg_c_vis;          /**<  the viscosity parameter */
+  short   has_nap_dsg;        /**<  include non-adiabatic pressure? (note we use the generalized dark matter model of W. Hu) */
+  double  dsg_c_eff2;          /**<  the rest frame speed of sound */
+  double  dsg_c_vis2;          /**<  the viscosity parameter */
 
   //@}
 
