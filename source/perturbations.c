@@ -612,7 +612,7 @@ int perturb_indices_of_perturbs(
   /* Designer Additions */
   ppt->has_source_delta_dsg = _FALSE_;
   ppt->has_source_theta_dsg = _FALSE_;
-  ppt->has_source_pi_dsg = _FALSE_;
+  ppt->has_source_shear_dsg = _FALSE_;
   /* End of Additions */
 
   /** - source flags and indices, for sources that all modes have in
@@ -773,7 +773,7 @@ int perturb_indices_of_perturbs(
       // Designer Additions
       if(pba->has_dsg == _TRUE_ ){
         if(pba->dsg_c_vis2 != 0)
-          ppt->has_source_pi_dsg;
+          ppt->has_source_shear_dsg;
       }
       // End of Additons
 
@@ -813,7 +813,7 @@ int perturb_indices_of_perturbs(
       /* Designer Additions */
       class_define_index(ppt->index_tp_delta_dsg,  ppt->has_source_delta_dsg, index_type,1);
       class_define_index(ppt->index_tp_theta_dsg,  ppt->has_source_theta_dsg, index_type,1);
-      class_define_index(ppt->index_tp_pi_dsg,     ppt->has_source_pi_dsg,    index_type,1);
+      class_define_index(ppt->index_tp_shear_dsg,  ppt->has_source_shear_dsg,    index_type,1);
       /* End of Additions */
       ppt->tp_size[index_md] = index_type;
 
@@ -2583,7 +2583,7 @@ int perturb_prepare_output(struct background * pba,
       /* Designer Additons */
       class_store_columntitle(ppt->scalar_titles, "delta_dsg", pba->has_dsg);
       class_store_columntitle(ppt->scalar_titles, "theta_dsg", pba->has_dsg);
-      class_store_columntitle(ppt->scalar_titles, "pi_dsg",    ppt->has_source_pi_dsg);
+      class_store_columntitle(ppt->scalar_titles, "shear_dsg",    ppt->has_source_shear_dsg);
       /* End of Additions */
 
       ppt->number_of_scalar_titles =
@@ -3206,7 +3206,7 @@ int perturb_vector_init(
     if(pba->has_dsg == _TRUE_){
       class_define_index(ppv->index_pt_delta_dsg,_TRUE_,index_pt,1); /* density of designer material */
       class_define_index(ppv->index_pt_theta_dsg,_TRUE_,index_pt,1); /* velocity of designer material */
-      class_define_index(ppv->index_pt_pi_dsg,pba->dsg_c_vis2!=0,index_pt,1);    /* anisotropic pressure perturbation of designer material */
+      class_define_index(ppv->index_pt_shear_dsg,pba->dsg_c_vis2!=0,index_pt,1);    /* anisotropic pressure perturbation of designer material */
     }
     /* End of Additions */
 
@@ -3585,7 +3585,7 @@ int perturb_vector_init(
         ppv->y[ppv->index_pt_delta_dsg]=ppw->pv->y[ppw->pv->index_pt_delta_dsg];
         ppv->y[ppv->index_pt_theta_dsg]=ppw->pv->y[ppw->pv->index_pt_theta_dsg];
         if(pba->dsg_c_vis2!=0){
-          ppv->y[ppv->index_pt_pi_dsg]=ppw->pv->y[ppw->pv->index_pt_pi_dsg];
+          ppv->y[ppv->index_pt_shear_dsg]=ppw->pv->y[ppw->pv->index_pt_shear_dsg];
         }
       }
       /* End of Additions */
@@ -4341,7 +4341,7 @@ int perturb_initial_conditions(struct precision * ppr,
         ppw->pv->y[ppw->pv->index_pt_delta_dsg]= ppw->pv->y[ppw->pv->index_pt_delta_g];
         ppw->pv->y[ppw->pv->index_pt_theta_dsg]= ppw->pv->y[ppw->pv->index_pt_theta_g]; // Dsg TODO Generalize
         if(pba->dsg_c_vis2!=0){
-          ppw->pv->y[ppw->pv->index_pt_pi_dsg]= 0; // Dsg TODO Generalize
+          ppw->pv->y[ppw->pv->index_pt_shear_dsg]= 0; // Dsg TODO Generalize
         }
       }
       // End of Additons
@@ -5670,7 +5670,7 @@ int perturb_total_stress_energy(
     if (pba->has_dsg == _TRUE_){
       ppw->delta_rho += ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
       ppw->rho_plus_p_theta += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_theta_dsg];
-      if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_pi_dsg];
+      if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_shear_dsg];
       ppw->delta_p += ppw->pvecback[pba->index_bg_dsg_w]*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
       rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho];
 
@@ -6356,8 +6356,8 @@ int perturb_sources(
     if (ppt->has_source_theta_dsg == _TRUE_){
       _set_source_(ppt->index_tp_theta_dsg) = y[ppw->pv->index_pt_theta_dsg];
     }
-    if (ppt->has_source_pi_dsg == _TRUE_){
-      _set_source_(ppt->index_tp_pi_dsg) = y[ppw->pv->index_pt_pi_dsg];
+    if (ppt->has_source_shear_dsg == _TRUE_){
+      _set_source_(ppt->index_tp_shear_dsg) = y[ppw->pv->index_pt_shear_dsg];
     }
     // end of additons
   }
@@ -6471,7 +6471,7 @@ int perturb_print_variables(double tau,
   double delta_temp=0., delta_chi=0.;
 
   // Designer additons
-  double delta_dsg=0.,theta_dsg=0.,pi_dsg=0.;
+  double delta_dsg=0.,theta_dsg=0.,shear_dsg=0.;
   // End of additons
 
   double a,a2,H;
@@ -6726,7 +6726,7 @@ int perturb_print_variables(double tau,
       delta_dsg = y[ppw->pv->index_pt_delta_dsg];
       theta_dsg = y[ppw->pv->index_pt_theta_dsg];
       if(pba->dsg_c_vis2 !=0)
-        pi_dsg = y[ppw->pv->index_pt_pi_dsg];
+        shear_dsg = y[ppw->pv->index_pt_shear_dsg];
     }
     // End of Additions
 
@@ -6846,7 +6846,7 @@ int perturb_print_variables(double tau,
     if (pba->has_dsg == _TRUE_){
     class_store_double(dataptr, delta_dsg, _TRUE_, storeidx);
     class_store_double(dataptr, theta_dsg, _TRUE_, storeidx);
-    if(pba->dsg_c_vis2 !=0) class_store_double(dataptr, pi_dsg, _TRUE_, storeidx);
+    if(pba->dsg_c_vis2 !=0) class_store_double(dataptr, shear_dsg, _TRUE_, storeidx);
     }
     // End of Additions
 
@@ -7735,19 +7735,32 @@ int perturb_derivs(double tau,
 
     // Designer Additions
     if (pba->has_dsg == _TRUE_) {
-      delta_dsg_rest=y[pv->index_pt_delta_dsg]+3.*a_prime_over_a*(1+pvecback[pba->index_bg_dsg_w])*y[pv->index_pt_theta_dsg]/k2;
-      c_dsg2=pvecback[pba->index_bg_dsg_w]-pvecback[pba->index_bg_dsg_dw_over_dlna]/(1+pvecback[pba->index_bg_dsg_w])/3;
+      //Some working variable for clarity
+      double w_dsg=pvecback[pba->index_bg_dsg_w];
+      double w_dsg_prime =pvecback[pba->index_bg_dsg_dw_over_dlna];
+
+
+      c_dsg2=w_dsg-w_dsg_prime/(1+w_dsg)/3;
       //delta_dsg evolution
-      dy[pv->index_pt_delta_dsg] = y[pv->index_pt_delta_dsg]*pvecback[pba->index_bg_dsg_dw_over_dlna]*a_prime_over_a/(1+pvecback[pba->index_bg_dsg_w])-(1+pvecback[pba->index_bg_dsg_w])*(y[pv->index_pt_theta_dsg]+metric_continuity);
-      if (pba->has_nap_dsg == _TRUE_) dy[pv->index_pt_delta_dsg] -= 3*a_prime_over_a*(pba->dsg_c_eff2-c_dsg2)*delta_dsg_rest;
+      dy[pv->index_pt_delta_dsg] = y[pv->index_pt_delta_dsg]*w_dsg_prime*a_prime_over_a/(1+w_dsg)-(1+w_dsg)*(y[pv->index_pt_theta_dsg]+metric_continuity);
+      if (pba->has_nap_dsg == _TRUE_){
+            delta_dsg_rest=y[pv->index_pt_delta_dsg]+3.*a_prime_over_a*(1+w_dsg)*y[pv->index_pt_theta_dsg]/k2;
+            dy[pv->index_pt_delta_dsg] += -3*a_prime_over_a*(pba->dsg_c_eff2-c_dsg2)*delta_dsg_rest;
+      }
+
       //theta_dsg evolution
-      dy[pv->index_pt_theta_dsg] = -1.*a_prime_over_a*(1-3*c_dsg2)*y[pv ->index_pt_theta_dsg]+c_dsg2/(1+pvecback[pba->index_bg_dsg_w])*k2*y[pv->index_pt_delta_dsg] + metric_euler;
-      if (pba->has_nap_dsg == _TRUE_) dy[pv->index_pt_theta_dsg]+= (pba->dsg_c_eff2-c_dsg2)*delta_dsg_rest*k2/(1+pvecback[pba->index_bg_dsg_w]);
-      if (pba->dsg_c_vis2 != 0.) dy[pv->index_pt_theta_dsg]-= 2./3.*pvecback[pba->index_bg_dsg_w]/(1+pvecback[pba->index_bg_dsg_w])*k2*s2_squared*y[pv->index_pt_pi_dsg];
-      //pi_dsg evolution
+      if (pba->has_nap_dsg == _TRUE_){
+        dy[pv->index_pt_theta_dsg]= -1.*a_prime_over_a*y[pv->index_pt_theta_dsg]+ pba->dsg_c_eff2*delta_dsg_rest*k2/(1+w_dsg)+ metric_euler;
+      }
+      else{
+      dy[pv->index_pt_theta_dsg] = -1.*a_prime_over_a*(1-3*c_dsg2)*y[pv ->index_pt_theta_dsg]+c_dsg2/(1+w_dsg)*k2*y[pv->index_pt_delta_dsg] + metric_euler;
+      }
+      if (pba->dsg_c_vis2 != 0.) dy[pv->index_pt_theta_dsg] += -1.*k2*s2_squared*y[pv->index_pt_shear_dsg];
+
+      //shear_dsg evolution
       //printf("(%e,%e,%e,%e)\n",dy[pv->index_pt_delta_dsg],y[pv->index_pt_theta_dsg],dy[pv->index_pt_delta_dsg],dy[pv->index_pt_theta_dsg]);
       if (pba->dsg_c_vis2 != 0.){
-        dy[pv->index_pt_pi_dsg] =-3.*a_prime_over_a*y[pv->index_pt_pi_dsg]+4.*pba->dsg_c_vis2*(k*y[pv->index_pt_theta_dsg]+metric_shear_prime);
+        dy[pv->index_pt_shear_dsg] =-3.*a_prime_over_a*y[pv->index_pt_shear_dsg]+pba->dsg_c_vis2*2*(y[pv->index_pt_theta_dsg]+metric_shear);
       }
     }
     // End of Addtions

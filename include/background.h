@@ -342,13 +342,25 @@ struct background
   //@{
 
   short   has_dsg;             /**< presence of designer terms  */
-  int     dsg_num_of_bin_ends; /**< the number of designer bin ends */
-  double  *dsg_bin_ends;       /**< vector of location of ends of designer bins as values of log_10(a) */
-  int     dsg_num_of_param;    /**< the number of designer bins */
-  double  *dsg_param;          /**< vecotr of designer parameters */
-  double  dsg_tau;
+  int     dsg_num_of_knots;    /**< the number knots of delta(log(a)) provided */
+  double  *dsg_log10a_vals;    /**< an array of log10(a) values used as independent knots for w(log10(a)) */
+  double  *dsg_w_array;          /**< an array of length (dsg_num_of_knot)*3 stores (w(log10(a)),w'(log10(a)),w''(log10(a)), int w dlog10 a) */
+
+  int     index_dsg_w;             /**< the index where w(ln(a)) is stored in the dsg array*/
+  int     index_dsg_dw_by_dlog10a; /**< the index where w'(log10(a)) is stored in the dsg array  */
+  int     index_dsg_d2w_by_dlog10a2; /**< the index where w''(log10(a)) is stored in the dsg array  */
+  int     index_dsg_int_w_dlog10a; /**<  the index where integral w(ln(a)) dlog10(a) */
+  int     dsg_w_array_num_cols;        /**< number of cols in dsg array */
+
+  int     dsg_last_index;         /**< keeps track of the last index used to speed up spline interpolations */
+
+  double  dsg_alpha;              /** Omega_dsg/Omega_bg */
+  //REF double  dsg_ref_a;        /** the reference value of a for initial values */
+  double  dsg_ref_int_w;    /** the value of the integral from from the lower bound of ln(a) to ln(a_today)*/
+  double  dsg_ref_rho_dsg;   /** the value of rho dsg at the a_today points */
+
   int     index_bg_dsg_rho;    /**< index for storage of energy dendisty of the designer fluid */
-  int     index_bg_dsg_delta;  /**< index for storage of the designer parameter of the designer fluid */
+  int     index_bg_dsg_alpha;  /**< index for storage of the designer parameter of the designer fluid */
   int     index_bg_dsg_w;      /**< index for storage of the state parameter of the designer fluid */
   int     index_bg_dsg_dw_over_dlna;      /**< index for storage of the state parameter of the designer fluid */
 

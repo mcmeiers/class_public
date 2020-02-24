@@ -422,37 +422,56 @@ int background_functions(
   /** TODO add comments  */
   /** Assumes K=0 and only matter, radiatoin and Lambda */
   if(pba->has_dsg == _TRUE_){
-    double a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[0]),1/pba->dsg_tau);
-    double dist_i = 1./(1.+a_ratio_smthd_i);
-    double dist_i_sqd = pow(dist_i,2);
-    double dsg_delta=-1.*pba->dsg_param[0]*dist_i;
-    double dsg_ddelta_over_dlna=-1.*pba->dsg_param[0]*(-1*dist_i_sqd*a_ratio_smthd_i/pba->dsg_tau);
-    double dsg_d2delta_over_dlna2=-1.*pba->dsg_param[0]*(-1+2*dist_i*a_ratio_smthd_i)*a_ratio_smthd_i*dist_i_sqd/pow(pba->dsg_tau,2);
-   for (size_t i = 1; i < pba->dsg_num_of_param-1; i++) {
-     a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[i]),1/pba->dsg_tau);
-     dist_i = 1/(1+a_ratio_smthd_i);
-     dist_i_sqd = pow(dist_i,2);
-     dsg_delta+=dist_i*(pba->dsg_param[i-1]-pba->dsg_param[i]);
-     dsg_ddelta_over_dlna+=(pba->dsg_param[i-1]-pba->dsg_param[i])*(-1*dist_i_sqd*a_ratio_smthd_i/pba->dsg_tau);
-     dsg_d2delta_over_dlna2+=(pba->dsg_param[i-1]-pba->dsg_param[i])*(-1+2*dist_i*a_ratio_smthd_i)*a_ratio_smthd_i*dist_i_sqd/pow(pba->dsg_tau,2);
-   }
-   a_ratio_smthd_i=pow(a/pow(10,pba->dsg_bin_ends[pba->dsg_num_of_param-1]),1/pba->dsg_tau);
-   dist_i = 1/(1+a_ratio_smthd_i);
-   dist_i_sqd = pow(dist_i,2);
-   dsg_delta+=dist_i*pba->dsg_param[pba->dsg_num_of_param-1];
-   dsg_ddelta_over_dlna+=pba->dsg_param[pba->dsg_num_of_param-1]*(-1*dist_i_sqd*a_ratio_smthd_i/pba->dsg_tau);
-   dsg_d2delta_over_dlna2+=pba->dsg_param[pba->dsg_num_of_param-1]*(-1+2*dist_i*a_ratio_smthd_i)*a_ratio_smthd_i*dist_i_sqd/pow(pba->dsg_tau,2);
-   double dsg_w_bg=-1+((4/3.0)*rho_r+rho_m)/rho_tot;
-   printf("(%e,%f,%f)\n",a,dsg_w_bg,(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta);
-   double dsg_dw_bg_over_dlna=3*pow((dsg_w_bg+1),2)-(16/3.0*rho_r+3*rho_m)/rho_tot;
-   pvecback[pba->index_bg_dsg_delta]=dsg_delta;
-   pvecback[pba->index_bg_dsg_w]=dsg_w_bg+(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta;
-   pvecback[pba->index_bg_dsg_dw_over_dlna]=dsg_dw_bg_over_dlna+(1/3.0)*(pow(dsg_ddelta_over_dlna/dsg_delta,2)+dsg_d2delta_over_dlna2/dsg_delta);
-   pvecback[pba->index_bg_dsg_rho] = rho_tot*dsg_delta;
+    double log10a=log10(a);
+    // Find interval that log10(a) lies in
+    int dsg_interval_index;
+    if (pba->dsg_log10a_vals[pba->dsg_last_index]<=log10a) {
+      if (pba->dsg_log10a_vals[pba->dsg_last_index+1]<log10a){
+        pba->dsg_last_index++;
+        while(pba->dsg_log10a_vals[pba->dsg_last_index+1]<=log10a){
+        pba->dsg_last_index++;
+        }
+      }
+    }
+    else{
+      pba->dsg_last_index--;
+      while(pba->dsg_log10a_vals[pba->dsg_last_index]>log10a){
+      pba->dsg_last_index--;
+      }
+    }
+    dsg_interval_index=pba->dsg_last_index;
+
+    // store w, w'(log10(a)), int w dlog10(a) over (dsg_log10a_vals[0], log10a)  to work with
+    double dsg_w, dsg_dw_over_dlog10a, dsg_int_w_dlog10a,rho_dsg;
+
+    // some working variables
+    double dsg_h = pba->dsg_log10a_vals[dsg_interval_index+1] - pba->dsg_log10a_vals[dsg_interval_index]; // length of interval
+    double dsg_l = (log10a-pba->dsg_log10a_vals[dsg_interval_index])/dsg_h; // fraction of distance to left side of interval
+    double dsg_r = 1-dsg_l; // fraction of distance from right side of interval
+    double dsg_w1=pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on left side of interval
+    double dsg_w2=pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on right side of interval
+    double dsg_ddw1=pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];  // value of w''  on left side of interval
+    double dsg_ddw2=pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // value of w'' on right side of interval
+    dsg_w = dsg_r * dsg_w1 + dsg_l * dsg_w2 + ((dsg_r*dsg_r*dsg_r-dsg_r)*dsg_ddw1  +(dsg_l*dsg_l*dsg_l-dsg_l)* dsg_ddw2)*dsg_h*dsg_h/6.;
+    dsg_dw_over_dlog10a = (dsg_w2-dsg_w1)/dsg_h  + ((3*dsg_l*dsg_l*-1)* dsg_ddw2-(3*dsg_r*dsg_r-1)* dsg_ddw1)*dsg_h/6;
+    dsg_int_w_dlog10a =pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
+                        +((dsg_l+2*dsg_r)*dsg_w1+dsg_l*dsg_w2)*dsg_h*dsg_l/2
+                        +((dsg_l+2*dsg_r)*(2*(dsg_r*dsg_r+dsg_r*dsg_l-1)+dsg_l*dsg_l)*dsg_ddw1+dsg_l*(dsg_l*dsg_l-2)*dsg_ddw2)*dsg_h*dsg_h*dsg_h*dsg_l/24;
+    rho_dsg=pba->dsg_ref_rho_dsg*pow(pba->a_today/a,3)*exp(-3*log(10)*(dsg_int_w_dlog10a-pba->dsg_ref_int_w));
+    //printf("(%e,%e)",dsg_int_w_dlog10a,pba->dsg_ref_int_w);
+    //printf("(%e,%e,%e,%e)\n",a,pba->dsg_ref_rho_dsg,pow(pba->a_today/a,3),exp(-3*log(10)*(dsg_int_w_dlog10a-pba->dsg_ref_int_w)));
+   pvecback[pba->index_bg_dsg_rho]   = rho_dsg;
+   pvecback[pba->index_bg_dsg_alpha] = rho_dsg/(rho_r+rho_m);
+  // printf("%e\n",pvecback[pba->index_bg_dsg_alpha] );
+   pvecback[pba->index_bg_dsg_w]=dsg_w;
+   pvecback[pba->index_bg_dsg_dw_over_dlna]=dsg_dw_over_dlog10a/log(10);
+
    rho_tot += pvecback[pba->index_bg_dsg_rho];
    p_tot += pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-   rho_r += rho_r*dsg_delta;
-   rho_m += rho_m*dsg_delta;
+   rho_r += 3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+   rho_m += pvecback[pba->index_bg_dsg_rho]-3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+   //printf("(%e,%f,%f)\n",a,dsg_w_bg,(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta);
+
  }
 
   /** - compute expansion rate H from Friedmann equation: this is the
@@ -712,6 +731,68 @@ int background_init(
                w_fld);
   }
 
+  //Designer Additions
+  if (pba->has_dsg == _TRUE_) {
+            //Test that log(a) values are in cronological order and contain a_ini and a_today
+        int dsg_index_a_today_interval=0;
+        double log10a_today=log10(pba->a_today);
+        class_test(pba->dsg_log10a_vals[0]>log10(ppr->a_ini_over_a_today_default),pba->error_message,"Designer range does not include a_ini. Check your .ini file.");
+        for (size_t i = 1; i < pba->dsg_num_of_knots; i++) {
+            if(pba->dsg_log10a_vals[i]-log10a_today<=0) dsg_index_a_today_interval++;
+
+            class_test(pba->dsg_log10a_vals[i-1]>=pba->dsg_log10a_vals[i],pba->error_message,"Designer anchors number %d and %d are out of cronological order, anchors should be increasing values of Log(a). Check your .ini file.",i,i+1);
+        }
+        class_test(pba->dsg_log10a_vals[pba->dsg_num_of_knots-1]<log10(pba->a_today),pba->error_message,"Designer knots range does not contain a_today. Check your .ini file.");
+
+        // Initialize spline
+        class_call(array_spline_table_line_to_line(pba->dsg_log10a_vals,
+                                                   pba->dsg_num_of_knots,
+                                                   pba->dsg_w_array,
+                                                   pba->dsg_w_array_num_cols,
+                                                   pba->index_dsg_w,
+                                                   pba->index_dsg_d2w_by_dlog10a2,
+                                                   _SPLINE_NATURAL_,
+                                                   pba->error_message),
+                   pba->error_message,
+                   pba->error_message);
+        // Integrate out from pba->dsg_log10a_vals[0] to pba->dsg_log10a_vals[i]
+        double dsg_h,dsg_t,dsg_w1,dsg_w2,dsg_ddw1,dsg_ddw2;
+        pba->dsg_w_array[0*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]=0;
+        for(size_t i=0;i<pba->dsg_num_of_knots-1;i++){
+
+          dsg_h = pba->dsg_log10a_vals[i+1] - pba->dsg_log10a_vals[i];            // interval size
+          dsg_w1=pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
+          dsg_w2=pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
+          dsg_ddw1=pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(log10(a)) on left boundary
+          dsg_ddw2=pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(log10(a)) on right boundary
+
+          pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
+          =pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]+
+            (dsg_w1+dsg_w2)*dsg_h/2.+(dsg_ddw1+dsg_ddw2)*dsg_h*dsg_h*dsg_h/24.;
+          //printf("(%e,%e)\n",pba->dsg_log10a_vals[i+1],pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a] );
+        }
+
+        // Find int w dlog10(a) on the interval (dsg_log10a_vals[0], a_today)
+        dsg_h = pba->dsg_log10a_vals[dsg_index_a_today_interval+1] - pba->dsg_log10a_vals[dsg_index_a_today_interval]; // Size of interval
+        dsg_t =log10a_today- pba->dsg_log10a_vals[dsg_index_a_today_interval]; //Distance to left side of interval
+        dsg_w1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
+        dsg_w2=pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
+        dsg_ddw1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(log10(a)) on left boundary
+        dsg_ddw2=pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(log10(a)) on right boundary
+
+        pba->dsg_ref_int_w=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
+        +dsg_t*(dsg_w1
+          +dsg_t/2.0*((dsg_w2-dsg_w1)/dsg_h-(dsg_ddw2-dsg_ddw1)*dsg_h/6.0-dsg_ddw1*dsg_h/2.0
+            +dsg_t/3.0*(dsg_ddw1
+              +dsg_t/4.0*(dsg_ddw2-dsg_ddw1)/dsg_h
+            )
+          )
+        );
+
+        pba->dsg_ref_rho_dsg=pba->dsg_alpha*(1-pba->Omega0_lambda)*pba->H0*pba->H0;
+  }
+  //End of Additions
+
   /* in verbose mode, inform the user about the value of the ncdm
      masses in eV and about the ratio [m/omega_ncdm] in eV (the usual
      93 point something)*/
@@ -904,7 +985,7 @@ int background_indices(
 
   /** Designer additions */
   pba->has_dsg=_FALSE_;
-  if(pba->dsg_bin_ends !=NULL)
+  if(pba->dsg_log10a_vals !=NULL)
     pba->has_dsg = _TRUE_;
 
   /** - initialize all indices */
@@ -970,7 +1051,7 @@ int background_indices(
   /*    */
   class_define_index(pba->index_bg_dsg_rho,pba->has_dsg,index_bg,1);
   class_define_index(pba->index_bg_dsg_w,pba->has_dsg,index_bg,1);
-  class_define_index(pba->index_bg_dsg_delta,pba->has_dsg,index_bg,1);
+  class_define_index(pba->index_bg_dsg_alpha,pba->has_dsg,index_bg,1);
   class_define_index(pba->index_bg_dsg_dw_over_dlna,pba->has_dsg,index_bg,1);
 
 
@@ -1990,7 +2071,7 @@ int background_initial_conditions(
   Omega_rad = pba->Omega0_g;
   if (pba->has_ur == _TRUE_)
     Omega_rad += pba->Omega0_ur;
-  rho_rad = Omega_rad*pow(pba->H0,2)/pow(a/pba->a_today,4);
+    rho_rad = Omega_rad*pow(pba->H0,2)/pow(a/pba->a_today,4);
   if (pba->has_ncdm == _TRUE_){
     /** - We must add the relativistic contribution from NCDM species */
     rho_rad += rho_ncdm_rel_tot;
@@ -2078,6 +2159,7 @@ int background_initial_conditions(
   }
 
   /* Infer pvecback from pvecback_integration */
+  printf("(%e,%e)\n", pba->Omega0_g,pba->H0);
   class_call(background_functions(pba, pvecback_integration, pba->normal_info, pvecback),
 	     pba->error_message,
 	     pba->error_message);
@@ -2244,7 +2326,7 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"gr.fac. D",_TRUE_);
   class_store_columntitle(titles,"gr.fac. f",_TRUE_);
 
-  class_store_columntitle(titles,"delta_dsg",pba->has_dsg);
+  class_store_columntitle(titles,"alpha_dsg",pba->has_dsg);
   class_store_columntitle(titles,"w_dsg",pba->has_dsg);
   class_store_columntitle(titles,"dw_dsg/dlna",pba->has_dsg);
   //class_store_columntitle(titles,"(.)rho_dsg",pba->has_dsg);
@@ -2301,7 +2383,7 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_D],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_f],_TRUE_,storeidx);
 
-    class_store_double(dataptr,pvecback[pba->index_bg_dsg_delta],pba->has_dsg,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_dsg_alpha],pba->has_dsg,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dsg_w],pba->has_dsg,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_dsg_dw_over_dlna],pba->has_dsg,storeidx);
     //class_store_double(dataptr,pvecback[pba->index_bg_dsg_rho],pba->has_dsg,storeidx);

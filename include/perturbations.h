@@ -315,10 +315,10 @@ struct perturbs
   /** Designer Additions */
   short has_source_delta_dsg;
   short has_source_theta_dsg;
-  short has_source_pi_dsg;
+  short has_source_shear_dsg;
   int index_tp_delta_dsg;
   int index_tp_theta_dsg;
-  int index_tp_pi_dsg;
+  int index_tp_shear_dsg;
   /** End of Additions */
   //@}
 
@@ -429,7 +429,7 @@ struct perturb_vector
   /** Designer Additions */
   int index_pt_delta_dsg;
   int index_pt_theta_dsg;
-  int index_pt_pi_dsg;
+  int index_pt_shear_dsg;
   /** End of Additions */
 
 /* perturbed recombination */

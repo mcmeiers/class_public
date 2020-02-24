@@ -941,6 +941,112 @@ int input_read_parameters(
   }
   Omega_tot += pba->Omega0_ncdm_tot;
 
+/* designer additions */
+  class_call(parser_read_list_of_doubles(pfc,
+                                         "dsg_log10a_vals",
+                                         &(pba->dsg_num_of_knots),
+                                         &(pba->dsg_log10a_vals),
+                                         &flag1,
+                                         errmsg),
+             errmsg,errmsg);
+
+if(flag1==_TRUE_){
+
+    class_call(parser_read_list_of_doubles(pfc,
+                                           "dsg_w_vals",
+                                           &(int1),
+                                           &(pointer1),
+                                           &flag2,
+                                           errmsg),
+                           errmsg,errmsg);
+
+    // Test to ensure both log10(a) and w values provided
+    class_test(flag1!=flag2,errmsg,"Exclusively provided independent or dependent values for designer parameter both or neither must be present. Check your .ini file.");
+
+    // Test to ensure we have the same number of log(a) and delta values
+    class_test(pba->dsg_num_of_knots != int1,errmsg,"Number of designer independent and dependant values are missmatched. Found %d independent and %d dependant.  Check your .ini file.",pba->dsg_num_of_knots,int1);
+
+    // Allocate the spline table and set indices
+    pba->index_dsg_w=0;
+    pba->index_dsg_d2w_by_dlog10a2=1;
+    pba->index_dsg_int_w_dlog10a=2;
+    pba->dsg_w_array_num_cols=3;
+    class_alloc(pba->dsg_w_array,pba->dsg_w_array_num_cols*pba->dsg_num_of_knots*sizeof(double),errmsg);
+
+    // Store w values in the spline array and ensure parameters are between -1 and 1
+    for (size_t i = 0; i < pba->dsg_num_of_knots; i++) {
+        pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w]=pointer1[i];
+        class_test((pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w]<-1)||(pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w]>1),errmsg,"Designer w number %d read as %g and is outside of the -1 to 1 range. Check your .ini file.",i+1,pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w]);
+    }
+    // Free the storage of delta values now that they've been stored in spline array
+    free(pointer1);
+
+    // Look for what reference value of a we initialize at if none provided a_ref=1/3001
+    //REF param1=3000.0;
+    //REF class_read_double("dsg_z_ref",param1); // Reads z_ref value from input if provided
+    //REF pba->dsg_reference_a=1.0/(param1+1);      // converts from z_ref to a_ref
+    //REF class_read_double("dsg_a_ref",pba->dsg_reference_a); // Read  a_ref value from input if provided
+    //REF int dsg_idx_a_ref_interval=0; // the lower index of the interval that a_ref is found
+    //REF double dsg_loga_ref= log10(pba->dsg_reference_a); // will be used to find interval of a_ref
+
+
+
+    //Test that log(a) values are in cronological order and has a large enough range
+    //REF class_test(pba->dsg_log10a_vals[0]>=dsg_loga_ref,errmsg,"Designer range does not include a_ref. Check your .ini file.");
+    //REF if(pba->dsg_log10a_vals[i]<=dsg_loga_ref)dsg_idx_a_ref_interval++; // If the lower side of the interval is smaller than the log10(a_ref) value then increase our interval index
+    //REF class_test(dsg_idx_a_ref_interval=pba->dsg_num_of_knots-1,errmsg,"Designer knots range does not contain a_ref. Check your .ini file.");
+    //REF class_test(((pba->dsg_log10a_vals[dsg_idx_a_ref_interval]<=dsg_loga_ref)&&(pba->dsg_log10a_vals[dsg_idx_a_ref_interval+1]>=dsg_loga_ref)),errmsg,"please work")
+
+    //REF error fix index from i
+    /*
+    dsg_h = pba->dsg_log10a_vals[dsg_idx_a_ref_interval+1] - pba->dsg_log10a_vals[dsg_idx_a_ref_interval];
+    double dsg_Delta_loga = dsg_loga_ref-pba->dsg_log10a_vals[dsg_idx_a_ref_interval] ;
+
+    pba->dsg_reference_int_w=pba->dsg_w_array[dsg_idx_a_ref_interval*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
+    +dsg_Delta_loga*(pba->dsg_w_array[dsg_idx_a_ref_interval*pba->dsg_w_array_num_cols+pba->index_dsg_w]
+      +dsg_Delta_loga/2.0*((pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w]-pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w])/dsg_h
+      -(pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]-pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2])*dsg_h/6.0
+      -pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]*dsg_h/2.0
+        +dsg_Delta_loga/3.0*(pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]
+          +dsg_Delta_loga/4.0*(pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]-pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2])/dsg_h
+        )
+      )
+    );*/
+
+    class_call(parser_read_double(pfc,
+                                  "dsg_alpha",
+                                  &(pba->dsg_alpha),
+                                  &flag1,
+                                  errmsg),
+               errmsg,errmsg);
+
+    class_test(!flag1,errmsg,"Designer materical requires alpha=Omega_dsg/Omega_bg. Check your .ini file.");
+    Omega_tot += Omega_tot*pba->dsg_alpha;
+
+    pba->has_nap_dsg=_FALSE_;
+    class_call(parser_read_string(pfc,"nap",&string1,&flag1,errmsg),errmsg,errmsg);
+    if (flag1 == _TRUE_) {
+      /* if non-adiabatic pressure is not specified, the default is has_nap_dsg=_FALSE_; */
+      if ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))
+        pba->has_nap_dsg=_TRUE_;
+    }
+
+    if(pba->has_nap_dsg==_TRUE_){
+      pba->dsg_c_eff2=1;
+      class_read_double("dsg_c_eff2",pba->dsg_c_eff2); // Reads c_eff^2 if provided, otherise defaults to c_eff^2=1
+    }
+
+    pba->dsg_c_vis2=0;
+    class_read_double("dsg_c_vis2",pba->dsg_c_vis2); // Reads c_vis^2 if provided, otherise defaults to c_vis^2=0
+
+    pba->has_dsg=1;
+}
+else {
+  pba->has_dsg=0;
+}
+
+/* End of Additions */
+
   /** - Omega_0_k (effective fractional density of curvature) */
   class_read_double("Omega_k",pba->Omega0_k);
   /** - Set curvature parameter K */
@@ -1116,66 +1222,7 @@ int input_read_parameters(
     }
   }
 
-  /* designer additions */
-  class_call(parser_read_list_of_doubles(pfc,
-                                         "dsg_bin_ends",
-                                         &(pba->dsg_num_of_bin_ends),
-                                         &(pba->dsg_bin_ends),
-                                         &flag1,
-                                         errmsg),
-             errmsg,errmsg);
 
-  class_call(parser_read_list_of_doubles(pfc,
-                                         "dsg_param",
-                                         &(pba->dsg_num_of_param),
-                                         &(pba->dsg_param),
-                                         &flag2,
-                                         errmsg),
-             errmsg,errmsg);
-  class_test(flag1!=flag2,
-             errmsg,
-             "Exclusively designer bin ends or designer parameters are present, include both or neither. Check your .ini file.");
-if(flag1==_TRUE_){
-    class_test((pba->dsg_num_of_bin_ends)-1 != pba->dsg_num_of_param,
-                errmsg,
-                "Number of designer bins and parameters are missmatched. Found %d bins and %d parameters.  Check your .ini file.",(pba->dsg_num_of_bin_ends)-1,pba->dsg_num_of_param);
-
-    for (size_t i = 0; i < pba->dsg_num_of_param; i++) {
-        param1=pba->dsg_param[i];
-        class_test((param1<0)||(param1>1),errmsg,"Designer parameter %d read as %g and is outside of the 0 to 1 range. Check your .ini file.",i+1,param1);
-    }
-
-    param1=pba->dsg_bin_ends[0];
-    for (size_t i = 1; i < pba->dsg_num_of_bin_ends; i++) {
-         param2=pba->dsg_bin_ends[i];
-         class_test(param1>param2,errmsg,"Designer bin ends number %d and %d are out of cronological order, bins should be decreasing values of Log(z). Check your .ini file.",i,i+1);
-        param1=param2;
-    }
-
-    pba->has_dsg=1;
-    pba->dsg_tau=0.2;
-    class_read_double("dsg_tau",pba->dsg_tau); // Reads tau value from input if provided
-
-    pba->has_nap_dsg=_FALSE_;
-    class_call(parser_read_string(pfc,"nap",&string1,&flag1,errmsg),errmsg,errmsg);
-    if (flag1 == _TRUE_) {
-      /* if non-adiabatic pressure is not specified, the default is has_nap_dsg=_FALSE_; */
-      if ((strstr(string1,"y") != NULL) || (strstr(string1,"Y") != NULL))
-        pba->has_nap_dsg=_TRUE_;
-    }
-
-    if(pba->has_nap_dsg==_TRUE_){
-      pba->dsg_c_eff2=1;
-      class_read_double("dsg_c_eff2",pba->dsg_c_eff2); // Reads c_eff^2 if provided, otherise defaults to c_eff^2=1
-    }
-
-    pba->dsg_c_vis2=0;
-    class_read_double("dsg_c_vis2",pba->dsg_c_vis2); // Reads c_vis^2 if provided, otherise defaults to c_vis^2=0
-}
-else {
-  pba->has_dsg=0;
-}
-/* End of Additions */
 
   /** (b) assign values to thermodynamics cosmological parameters */
 
