@@ -6918,7 +6918,7 @@ int perturb_total_stress_energy(
       ppw->rho_plus_p_theta += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_theta_dsg];
       if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_shear_dsg];
       ppw->delta_p += ppw->pvecback[pba->index_bg_dsg_w]*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
-      rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho];
+      ppw->rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho];
 
     }
     else{//printf("(%e,%e,%e,%e)\n",rho_plus_p_tot,ppw->delta_rho,ppw->rho_plus_p_shear,ppw->delta_p);
@@ -8270,12 +8270,12 @@ int perturb_print_variables(double tau,
     //fprintf(ppw->perturb_output_file,"\n");
 
   }
-  /** - for tensor  /** Designer Additions */
+  /** Designer Additions */
   int index_pt_delta_dsg;
   int index_pt_theta_dsg;
   int index_pt_shear_dsg;
-  /** End of Additions */ modes: */
-
+  /** End of Additions */
+  /** - for tensor modes: */
   if (_tensors_) {
 
     if (ppw->approx[ppw->index_ap_rsa]==(int)rsa_off) {
