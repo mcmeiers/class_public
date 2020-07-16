@@ -2240,7 +2240,7 @@ int background_initial_conditions(
   }
 
   /* Infer pvecback from pvecback_integration */
-  printf("(%e,%e)\n", pba->Omega0_g,pba->H0);
+  /*printf("(%e,%e)\n", pba->Omega0_g,pba->H0);*/
   class_call(background_functions(pba, pvecback_integration, pba->normal_info, pvecback),
              pba->error_message,
              pba->error_message);
