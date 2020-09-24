@@ -1308,7 +1308,7 @@ int perturb_indices_of_perturbs(
       /* Designer Additions */
       class_define_index(ppt->index_tp_delta_dsg,  ppt->has_source_delta_dsg, index_type,1);
       class_define_index(ppt->index_tp_theta_dsg,  ppt->has_source_theta_dsg, index_type,1);
-      class_define_index(ppt->index_tp_shear_dsg,  ppt->has_source_shear_dsg,    index_type,1);
+      class_define_index(ppt->index_tp_shear_dsg,  ppt->has_source_shear_dsg, index_type,1);
       /* End of Additions */
       ppt->tp_size[index_md] = index_type;
 
@@ -3190,7 +3190,7 @@ int perturb_prepare_k_output(struct background * pba,
       /* Designer Additons */
       class_store_columntitle(ppt->scalar_titles, "delta_dsg", pba->has_dsg);
       class_store_columntitle(ppt->scalar_titles, "theta_dsg", pba->has_dsg);
-      class_store_columntitle(ppt->scalar_titles, "shear_dsg",    ppt->has_source_shear_dsg);
+      class_store_columntitle(ppt->scalar_titles, "shear_dsg", ppt->has_source_shear_dsg);
       /* End of Additions */
 
       ppt->number_of_scalar_titles =
@@ -6916,14 +6916,12 @@ int perturb_total_stress_energy(
     if (pba->has_dsg == _TRUE_){
       ppw->delta_rho += ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
       ppw->rho_plus_p_theta += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_theta_dsg];
-      if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_shear_dsg];
-      ppw->delta_p += ppw->pvecback[pba->index_bg_dsg_w]*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
+      if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear +=(1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_shear_dsg];
+      ppw->delta_p += pba->dsg_c_eff2*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
+
       ppw->rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho];
 
     }
-    else{//printf("(%e,%e,%e,%e)\n",rho_plus_p_tot,ppw->delta_rho,ppw->rho_plus_p_shear,ppw->delta_p);
-        //getchar();
-      }
     //End of additons
 
     /* fluid contribution */
