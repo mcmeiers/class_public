@@ -815,7 +815,7 @@ int background_init(
           //printf("(%e,%e)\n",pba->dsg_log10a_vals[i+1],pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a] );
         }
 
-        // Find int w dlog10(a) on the interval (dsg_log10a_vals[0], a_today)
+        // Integrate w dlog10(a) over the interval (dsg_log10a_vals[0], a_today)
         dsg_h = pba->dsg_log10a_vals[dsg_index_a_today_interval+1] - pba->dsg_log10a_vals[dsg_index_a_today_interval]; // Size of interval
         dsg_t =log10a_today- pba->dsg_log10a_vals[dsg_index_a_today_interval]; //Distance to left side of interval
         dsg_w1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
