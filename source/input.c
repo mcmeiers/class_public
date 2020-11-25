@@ -1264,9 +1264,9 @@ if(flag1==_TRUE_){
     class_test(pba->dsg_num_of_knots != int1,errmsg,"Number of designer independent and dependant values are missmatched. Found %d independent and %d dependant.  Check your .ini file.",pba->dsg_num_of_knots,int1);
 
     // Allocate the spline table and set indices
-    pba->index_dsg_w=0;
-    pba->index_dsg_d2w_by_dlog10a2=1;
-    pba->index_dsg_int_w_dlog10a=2;
+    pba->index_dsg_w = 0;
+    pba->index_dsg_d2w_by_dlog10a2 = 1;
+    pba->index_dsg_int_w_dlog10a = 2;
     pba->dsg_w_array_num_cols=3;
     class_alloc(pba->dsg_w_array,pba->dsg_w_array_num_cols*pba->dsg_num_of_knots*sizeof(double),errmsg);
 
