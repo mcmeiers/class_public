@@ -1336,10 +1336,10 @@ if(flag1==_TRUE_){
     pba->dsg_c_vis2=0;
     class_read_double("dsg_c_vis2",pba->dsg_c_vis2); // Reads c_vis^2 if provided, otherise defaults to c_vis^2=0
 
-    pba->has_dsg=1;
+    pba->has_dsg=_TRUE_;
 }
 else {
-  pba->has_dsg=0;
+  pba->has_dsg=_FALSE_;
 }
 
 /* End of Additions */
