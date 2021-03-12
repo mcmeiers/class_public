@@ -472,36 +472,37 @@ int background_functions(
     }
     dsg_interval_index=pba->dsg_last_index;
 
-    // store w, w'(log10(a)), int w dlog10(a) over (dsg_log10a_vals[0], log10a)  to work with
-    double dsg_w, dsg_dw_over_dlog10a, dsg_int_w_dlog10a,rho_dsg;
+    // store local w, w'(log10(a)), int w dlog10(a) over (dsg_log10a_vals[0], log10a) and rho_dsg
+    double w, dw_dlog10a, int_w_dlog10a ,rho_dsg;
 
     // some working variables
-    double dsg_h = pba->dsg_log10a_vals[dsg_interval_index+1] - pba->dsg_log10a_vals[dsg_interval_index]; // length of interval
-    double dsg_l = (log10a-pba->dsg_log10a_vals[dsg_interval_index])/dsg_h; // fraction of distance to left side of interval
-    double dsg_r = 1-dsg_l; // fraction of distance from right side of interval
-    double dsg_w1=pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on left side of interval
-    double dsg_w2=pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on right side of interval
-    double dsg_ddw1=pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];  // value of w''  on left side of interval
-    double dsg_ddw2=pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // value of w'' on right side of interval
-    dsg_w = dsg_r * dsg_w1 + dsg_l * dsg_w2 + ((dsg_r*dsg_r*dsg_r-dsg_r)*dsg_ddw1  +(dsg_l*dsg_l*dsg_l-dsg_l)* dsg_ddw2)*dsg_h*dsg_h/6.;
-    dsg_dw_over_dlog10a = (dsg_w2-dsg_w1)/dsg_h  + ((3*dsg_l*dsg_l*-1)* dsg_ddw2-(3*dsg_r*dsg_r-1)* dsg_ddw1)*dsg_h/6;
-    dsg_int_w_dlog10a =pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-                        +((dsg_l+2*dsg_r)*dsg_w1+dsg_l*dsg_w2)*dsg_h*dsg_l/2
-                        +((dsg_l+2*dsg_r)*(2*(dsg_r*dsg_r+dsg_r*dsg_l-1)+dsg_l*dsg_l)*dsg_ddw1+dsg_l*(dsg_l*dsg_l-2)*dsg_ddw2)*dsg_h*dsg_h*dsg_h*dsg_l/24;
-    rho_dsg=pba->dsg_ref_rho_dsg*pow(pba->a_today/a,3)*exp(-3*log(10)*(dsg_int_w_dlog10a-pba->dsg_ref_int_w));
-    //printf("(%e,%e)",dsg_int_w_dlog10a,pba->dsg_ref_int_w);
-    //printf("(%e,%e,%e,%e)\n",a,pba->dsg_ref_rho_dsg,pow(pba->a_today/a,3),exp(-3*log(10)*(dsg_int_w_dlog10a-pba->dsg_ref_int_w)));
-   pvecback[pba->index_bg_dsg_rho]   = rho_dsg;
-   pvecback[pba->index_bg_dsg_alpha] = rho_dsg/(rho_r+rho_m);
-  // printf("%e\n",pvecback[pba->index_bg_dsg_alpha] );
-   pvecback[pba->index_bg_dsg_w]=dsg_w;
-   pvecback[pba->index_bg_dsg_dw_over_dlna]=dsg_dw_over_dlog10a/log(10);
+    double h = pba->dsg_log10a_vals[dsg_interval_index+1] - pba->dsg_log10a_vals[dsg_interval_index]; // length of interval
+    double l = (log10a-pba->dsg_log10a_vals[dsg_interval_index])/h; // fraction of distance to left side of interval
+    double r = 1-l; // fraction of distance from right side of interval
+    double w1 = pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on left side of interval
+    double w2 = pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on right side of interval
+    double ddw1 = pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];  // value of w''  on left side of interval
+    double ddw2 = pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // value of w'' on right side of interval
+    w = r*w1 + l*w2 + ((r*r-1)*r*ddw1  +(l*l-1)*l*ddw2)*h*h/6.;
+    dw_dlog10a = (w2-w1)/h  + ((3*l*l*-1)*ddw2-(3*r*r-1)*ddw1)*h/6;
+    int_w_dlog10a = pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
+                      +h*(l*l*(w2+(l*l-1)*ddw2*h*h/6.0)
+                          -(r-1)*r*(w1+(r*r-1)*ddw1*h*h/6.0));
+    rho_dsg=pba->dsg_ref_rho_dsg*pow(pba->a_today/a,3)*exp(-3*log(10)*(int_w_dlog10a-pba->dsg_ref_int_w));
 
-   rho_tot += pvecback[pba->index_bg_dsg_rho];
-   p_tot += pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-   rho_r += 3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-   rho_m += pvecback[pba->index_bg_dsg_rho]-3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-   //printf("(%e,%f,%f)\n",a,dsg_w_bg,(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta);
+    pvecback[pba->index_bg_dsg_rho]   = rho_dsg;
+    pvecback[pba->index_bg_dsg_alpha] = rho_dsg/(rho_r+rho_m);
+
+    pvecback[pba->index_bg_dsg_w]=w;
+    pvecback[pba->index_bg_dsg_dw_over_dlna]= dw_dlog10a/log(10);
+
+    rho_tot += pvecback[pba->index_bg_dsg_rho];
+    p_tot += pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+    // assumes that gdm is divisiable into radiation like and materr like materials exclusively
+    // potential addition more general disections
+    rho_r += 3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+    rho_m += pvecback[pba->index_bg_dsg_rho]-3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
+    //printf("(%e,%f,%f)\n",a,dsg_w_bg,(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta);
 
  }
 
@@ -799,35 +800,98 @@ int background_init(
                    pba->error_message,
                    pba->error_message);
         // Integrate out from pba->dsg_log10a_vals[0] to pba->dsg_log10a_vals[i]
-        double dsg_h,dsg_t,dsg_w1,dsg_w2,dsg_ddw1,dsg_ddw2;
+        // Also do check to ensure |w|<1
+        double h,w1,w2,ddw1,ddw2,t,w_at_t,desc,desc_sqrt;
         pba->dsg_w_array[0*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]=0;
         for(size_t i=0;i<pba->dsg_num_of_knots-1;i++){
+          // Locally load info for the ith spline normalized such that the original interval
+          // log10a in [pba->dsg_log10a_vals[i], pba->dsg_log10a_vals[i+1]] is linearly mapped to t in [0,1]
+          // via t = (log10a - pba->dsg_log10a_vals[i])/h
+          // where h is the original interval length
+          // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d2w_by_dlog10a2
+          h = pba->dsg_log10a_vals[i+1] - pba->dsg_log10a_vals[i];            // interval size
+          w1=pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
+          w2=pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
+          ddw1=h*h*pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(t) on left boundary
+          ddw2=h*h*pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(t) on right boundary
 
-          dsg_h = pba->dsg_log10a_vals[i+1] - pba->dsg_log10a_vals[i];            // interval size
-          dsg_w1=pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
-          dsg_w2=pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
-          dsg_ddw1=pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(log10(a)) on left boundary
-          dsg_ddw2=pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(log10(a)) on right boundary
-
+          // Integrate over the interval recored the accumulated integral from inital
           pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-          =pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]+
-            (dsg_w1+dsg_w2)*dsg_h/2.+(dsg_ddw1+dsg_ddw2)*dsg_h*dsg_h*dsg_h/24.;
+          =pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
+            + h*(12*(w1+w2)-(ddw1+ddw2))/24;
+
+          // Also do check to ensure |w|<1
+          if (ddw1==ddw2){
+            if (ddw1 != 0){
+              t = (1.0/2.0 +(w1-w2)/(ddw1)); // location of maximum for degenerate case where order spline becomes 2nd order
+              if(t>0 && t<1 ){
+                w_at_t = w1
+                          +t*((w2-w1)-(2*ddw1+ddw2)/6.0
+                            +t*(ddw1/2.0
+                              +t*(ddw2-ddw1)/6.0
+                            )
+                          );
+                class_test(w_at_t>-1 && w_at_t <1,
+                           pba->error_message,
+                           "|w|>1 in interval %i, check dsg_w_vals",i);
+              }
+            }
+          }
+          else{
+            desc = (pow(ddw1+ddw2,2)
+                    -ddw1*ddw2
+                    -6*(ddw2-ddw1)*(w2 - w1)
+                   )/3.0;
+            if(desc>=0){
+              desc_sqrt = sqrt(desc);
+              t= (ddw1-desc_sqrt)*(ddw1+ddw2)/(pow(ddw1,2)+pow(ddw2,2));
+              if(t>0 && t<1 ){
+                w_at_t = w1
+                          +t*((w2-w1)-(2*ddw1+ddw2)/6.0
+                            +t*(ddw1/2.0
+                              +t*(ddw2-ddw1)/6.0
+                            )
+                          );
+                class_test(w_at_t>-1 && w_at_t <1,
+                           pba->error_message,
+                           "|w|>1 in interval %i, check dsg_w_vals",i);
+              }
+              t= (ddw1+desc_sqrt)*(ddw1+ddw2)/(pow(ddw1,2)+pow(ddw2,2));
+               if(t>0 && t<1 ){
+                 w_at_t = w1
+                          +t*((w2-w1)-(2*ddw1+ddw2)/6.0
+                            +t*(ddw1/2.0
+                              +t*(ddw2-ddw1)/6.0
+                            )
+                          );
+                 class_test(w_at_t>-1 && w_at_t <1,
+                            pba->error_message,
+                            "|w|>1 in interval %i, check dsg_w_vals",i);
+              }
+            }
+          }
+
           //printf("(%e,%e)\n",pba->dsg_log10a_vals[i+1],pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a] );
         }
 
         // Integrate w dlog10(a) over the interval (dsg_log10a_vals[0], a_today)
-        dsg_h = pba->dsg_log10a_vals[dsg_index_a_today_interval+1] - pba->dsg_log10a_vals[dsg_index_a_today_interval]; // Size of interval
-        dsg_t =log10a_today- pba->dsg_log10a_vals[dsg_index_a_today_interval]; //Distance to left side of interval
-        dsg_w1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
-        dsg_w2=pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
-        dsg_ddw1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(log10(a)) on left boundary
-        dsg_ddw2=pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(log10(a)) on right boundary
+        // Locally load info for the ith spline normalized such that the original interval
+        // log10a in [pba->dsg_log10a_vals[i], pba->dsg_log10a_vals[i+1]] is linearly mapped to t in [0,1]
+        // via t = (log10a - pba->dsg_log10a_vals[i])/h
+        // where h is the original interval length
+        // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d^2w_i()/dloga^2
+        h = pba->dsg_log10a_vals[dsg_index_a_today_interval+1] - pba->dsg_log10a_vals[dsg_index_a_today_interval];            // interval size
+        t =log10a_today- pba->dsg_log10a_vals[dsg_index_a_today_interval]; //Distance to left side of interval
+        w1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
+        w2=pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
+        ddw1=h*h*pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(t) on left boundary
+        ddw2=h*h*pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(t) on right boundary
 
         pba->dsg_ref_int_w=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-        +dsg_t*(dsg_w1
-          +dsg_t/2.0*((dsg_w2-dsg_w1)/dsg_h-(dsg_ddw2-dsg_ddw1)*dsg_h/6.0-dsg_ddw1*dsg_h/2.0
-            +dsg_t/3.0*(dsg_ddw1
-              +dsg_t/4.0*(dsg_ddw2-dsg_ddw1)/dsg_h
+        +t*(w1
+          +t/2.0*((w2-w1)-(2.0*ddw1+ddw2)/6.0
+            +t/3.0*(ddw1
+              +t/4.0*(ddw2-ddw1)
             )
           )
         );
