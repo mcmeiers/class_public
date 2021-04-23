@@ -358,36 +358,34 @@ struct background
 
   //@}
 
-  /** @name - deisgner parameters */
+  /** @name - Generalized dark matter (GDM) parameters */
 
   //@{
 
-  short   has_dsg;             /**< presence of designer terms  */
-  int     dsg_num_of_knots;    /**< the number knots of delta(log(a)) provided */
-  double  *dsg_log10a_vals;    /**< an array of log10(a) values used as independent knots for w(log10(a)) */
-  double  *dsg_w_array;          /**< an array of length (dsg_num_of_knot)*3 stores (w(log10(a)),w'(log10(a)),w''(log10(a)), int w dlog10 a) */
+  short   has_gdm;             /**< presence of GDM terms  */
+  int     gdm_num_of_knots;    /**< the number knots of delta(log(a)) provided */
+  double  *gdm_log10a_vals;    /**< an array of log10(a) values used as independent knots for w(log10(a)) */
+  double  *gdm_w_array;        /**< an array of length (gdm_num_of_knot)*3 stores (w(log10(a)),w'(log10(a)),w''(log10(a)), int w dlog10 a) */
 
-  int     index_dsg_w;             /**< the index where w(ln(a)) is stored in the dsg array*/
-  int     index_dsg_dw_by_dlog10a; /**< the index where w'(log10(a)) is stored in the dsg array  */
-  int     index_dsg_d2w_by_dlog10a2; /**< the index where w''(log10(a)) is stored in the dsg array  */
-  int     index_dsg_int_w_dlog10a; /**<  the index where integral w(ln(a)) dlog10(a) */
-  int     dsg_w_array_num_cols;        /**< number of cols in dsg array */
+  int     index_gdm_w;               /**< the index where w(ln(a)) is stored in the gdm array*/
+  int     index_gdm_d2w_by_dlog10a2; /**< the index where w''(log10(a)) is stored in the gdm array  */
+  int     index_gdm_int_w_dlog10a;   /**<  the index where integral w(ln(a)) dlog10(a) */
+  int     gdm_w_array_num_cols;      /**< number of cols in gdm array */
 
-  int     dsg_last_index;         /**< keeps track of the last index used to speed up spline interpolations */
+  int     gdm_last_index;         /**< keeps track of the last index used to speed up spline interpolations */
 
-  double  dsg_alpha;              /** Omega_dsg/Omega_bg */
-  //REF double  dsg_ref_a;        /** the reference value of a for initial values */
-  double  dsg_ref_int_w;    /** the value of the integral from from the lower bound of ln(a) to ln(a_today)*/
-  double  dsg_ref_rho_dsg;   /** the value of rho dsg at the a_today points */
+  double  gdm_z_alpha;                /** reference redshift for energy density */
+  double  gdm_alpha;              /** Omega_gdm/Omega_bg at z_alpha */
+  double  rho_alpha_gdm;   /** the value of Omega_0_gdm */
 
-  int     index_bg_dsg_rho;    /**< index for storage of energy dendisty of the designer fluid */
-  int     index_bg_dsg_alpha;  /**< index for storage of the designer parameter of the designer fluid */
-  int     index_bg_dsg_w;      /**< index for storage of the state parameter of the designer fluid */
-  int     index_bg_dsg_dw_over_dlna;      /**< index for storage of the state parameter of the designer fluid */
+  int     index_bg_gdm_rho;    /**< index for storage of energy dendisty of the Generalized dark matter fluid */
+  int     index_bg_gdm_alpha;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_w;      /**< index for storage of the state parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_dw_over_dlna;      /**< index for storage of the state parameter of the Generalized dark matter fluid */
 
-  short   has_nap_dsg;        /**<  include non-adiabatic pressure? (note we use the generalized dark matter model of W. Hu) */
-  double  dsg_c_eff2;          /**<  the rest frame speed of sound */
-  double  dsg_c_vis2;          /**<  the viscosity parameter */
+  short   has_nap_gdm;        /**<  include non-adiabatic pressure? (note we use the generalized dark matter model of W. Hu) */
+  double  gdm_c_eff2;          /**<  the rest frame speed of sound */
+  double  gdm_c_vis2;          /**<  the viscosity parameter */
 
   //@}
 

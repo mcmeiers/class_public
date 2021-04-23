@@ -449,60 +449,61 @@ int background_functions(
     p_tot += (1./3.) * pvecback[pba->index_bg_rho_idr];
     rho_r += pvecback[pba->index_bg_rho_idr];
   }
-  /** designer additions not optimized and some calculations could be encapsulated */
+  /** generalized dark matter additions */
   /** TODO add comments  */
   /** Assumes K=0 and only matter, radiatoin and Lambda */
-  if(pba->has_dsg == _TRUE_){
+  if(pba->has_gdm == _TRUE_){
     double log10a=log10(a);
     // Find interval that log10(a) lies in
-    int dsg_interval_index;
-    if (pba->dsg_log10a_vals[pba->dsg_last_index]<=log10a) {
-      if (pba->dsg_log10a_vals[pba->dsg_last_index+1]<log10a){
-        pba->dsg_last_index++;
-        while(pba->dsg_log10a_vals[pba->dsg_last_index+1]<=log10a){
-        pba->dsg_last_index++;
+    int gdm_interval_index;
+    if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
+      if (pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
+        pba->gdm_last_index++;
+        while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
+        pba->gdm_last_index++;
         }
       }
     }
     else{
-      pba->dsg_last_index--;
-      while(pba->dsg_log10a_vals[pba->dsg_last_index]>log10a){
-      pba->dsg_last_index--;
+      pba->gdm_last_index--;
+      while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
+      pba->gdm_last_index--;
       }
     }
-    dsg_interval_index=pba->dsg_last_index;
+    gdm_interval_index=pba->gdm_last_index;
 
-    // store local w, w'(log10(a)), int w dlog10(a) over (dsg_log10a_vals[0], log10a) and rho_dsg
-    double w, dw_dlog10a, int_w_dlog10a ,rho_dsg;
+    // store local w, w'(log10(a)), int w dlog10(a) over (gdm_log10a_vals[0], log10a) and rho_gdm
+    double w, dw_dlog10a, int_w_dlog10a ,rho_gdm;
 
-    // some working variables
-    double h = pba->dsg_log10a_vals[dsg_interval_index+1] - pba->dsg_log10a_vals[dsg_interval_index]; // length of interval
-    double l = (log10a-pba->dsg_log10a_vals[dsg_interval_index])/h; // fraction of distance to left side of interval
-    double r = 1-l; // fraction of distance from right side of interval
-    double w1 = pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on left side of interval
-    double w2 = pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w]; // value of w on right side of interval
-    double ddw1 = pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];  // value of w''  on left side of interval
-    double ddw2 = pba->dsg_w_array[(dsg_interval_index+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // value of w'' on right side of interval
-    w = r*w1 + l*w2 + ((r*r-1)*r*ddw1  +(l*l-1)*l*ddw2)*h*h/6.;
-    dw_dlog10a = (w2-w1)/h  + ((3*l*l*-1)*ddw2-(3*r*r-1)*ddw1)*h/6;
-    int_w_dlog10a = pba->dsg_w_array[dsg_interval_index*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-                      +h*(l*l*(w2+(l*l-1)*ddw2*h*h/6.0)
-                          -(r-1)*r*(w1+(r*r-1)*ddw1*h*h/6.0));
-    rho_dsg=pba->dsg_ref_rho_dsg*pow(pba->a_today/a,3)*exp(-3*log(10)*(int_w_dlog10a-pba->dsg_ref_int_w));
+    // Locally load info for the section of the spline
+    // normalize such that the original interval of log10a in [gdm_log10a_vals[i],gdm_log10a_vals[i+1]]
+    // is linearly mapped to t in [0,1] via t = (log10a - gdm_log10a_vals[i])/h
+    // where h = gdm_log10a_vals[i+1]- gdm_log10a_vals[i] is the unnormalized interval length
+    // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d2w_by_dlog10a2
+    double h = pba->gdm_log10a_vals[gdm_interval_index+1] - pba->gdm_log10a_vals[gdm_interval_index];            // interval size
+    double t = (log10a - pba->gdm_log10a_vals[gdm_interval_index])/h;                           // normalized distance from left side of interval
+    double r = 1-t;                                                            // normalized distance from right side of interval
+    double w1=pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on left boundary
+    double w2=pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on right boundary
+    double ddw1=h*h*pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2];   // w''(t) on left boundary
+    double ddw2=h*h*pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2]; // w''(t) on right boundary
 
-    pvecback[pba->index_bg_dsg_rho]   = rho_dsg;
-    pvecback[pba->index_bg_dsg_alpha] = rho_dsg/(rho_r+rho_m);
+    w = r*w1 + t*w2 + ((r*r-1)*r*ddw1  +(t*t-1)*t*ddw2)/6.;
+    dw_dlog10a = ((w2-w1)+ ((3*t*t*-1)*ddw2-(3*r*r-1)*ddw1)/6)/h;
+    int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
+                    +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
+                        -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
+    rho_gdm = pba->rho_alpha_gdm*pow(1/(a*(1+pba->gdm_z_alpha)),3)*exp(-3*log(10)*int_w_dlog10a);
 
-    pvecback[pba->index_bg_dsg_w]=w;
-    pvecback[pba->index_bg_dsg_dw_over_dlna]= dw_dlog10a/log(10);
+    pvecback[pba->index_bg_gdm_rho]   = rho_gdm;
+    pvecback[pba->index_bg_gdm_alpha] = rho_gdm/(rho_r+rho_m);
 
-    rho_tot += pvecback[pba->index_bg_dsg_rho];
-    p_tot += pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-    // assumes that gdm is divisiable into radiation like and materr like materials exclusively
-    // potential addition more general disections
-    rho_r += 3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-    rho_m += pvecback[pba->index_bg_dsg_rho]-3.*pvecback[pba->index_bg_dsg_w]*pvecback[pba->index_bg_dsg_rho];
-    //printf("(%e,%f,%f)\n",a,dsg_w_bg,(-1/3.0)*dsg_ddelta_over_dlna/dsg_delta);
+    pvecback[pba->index_bg_gdm_w]=w;
+    pvecback[pba->index_bg_gdm_dw_over_dlna]= dw_dlog10a*log10(_E_);
+
+    rho_tot += pvecback[pba->index_bg_gdm_rho];
+    p_tot += pvecback[pba->index_bg_gdm_w]*pvecback[pba->index_bg_gdm_rho];
+    dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
 
  }
 
@@ -775,131 +776,6 @@ int background_init(
                w_fld);
   }
 
-  //Designer Additions
-  if (pba->has_dsg == _TRUE_) {
-            //Test that log(a) values are in cronological order and contain a_ini and a_today
-        int dsg_index_a_today_interval=0;
-        double log10a_today=log10(pba->a_today);
-        class_test(pba->dsg_log10a_vals[0]>log10(ppr->a_ini_over_a_today_default),pba->error_message,"Designer range does not include a_ini. Check your .ini file.");
-        for (size_t i = 1; i < pba->dsg_num_of_knots; i++) {
-            if(pba->dsg_log10a_vals[i]-log10a_today<=0) dsg_index_a_today_interval++;
-
-            class_test(pba->dsg_log10a_vals[i-1]>=pba->dsg_log10a_vals[i],pba->error_message,"Designer anchors number %d and %d are out of cronological order, anchors should be increasing values of Log(a). Check your .ini file.",i,i+1);
-        }
-        class_test(pba->dsg_log10a_vals[pba->dsg_num_of_knots-1]<log10(pba->a_today),pba->error_message,"Designer knots range does not contain a_today. Check your .ini file.");
-
-        // Initialize spline
-        class_call(array_spline_table_line_to_line(pba->dsg_log10a_vals,
-                                                   pba->dsg_num_of_knots,
-                                                   pba->dsg_w_array,
-                                                   pba->dsg_w_array_num_cols,
-                                                   pba->index_dsg_w,
-                                                   pba->index_dsg_d2w_by_dlog10a2,
-                                                   _SPLINE_NATURAL_,
-                                                   pba->error_message),
-                   pba->error_message,
-                   pba->error_message);
-        // Integrate out from pba->dsg_log10a_vals[0] to pba->dsg_log10a_vals[i]
-        // Also do check to ensure |w|<1
-        double h,w1,w2,ddw1,ddw2,t,w_at_t,desc,desc_sqrt;
-        pba->dsg_w_array[0*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]=0;
-        for(size_t i=0;i<pba->dsg_num_of_knots-1;i++){
-          // Locally load info for the ith spline normalized such that the original interval
-          // log10a in [pba->dsg_log10a_vals[i], pba->dsg_log10a_vals[i+1]] is linearly mapped to t in [0,1]
-          // via t = (log10a - pba->dsg_log10a_vals[i])/h
-          // where h is the original interval length
-          // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d2w_by_dlog10a2
-          h = pba->dsg_log10a_vals[i+1] - pba->dsg_log10a_vals[i];            // interval size
-          w1=pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
-          w2=pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
-          ddw1=h*h*pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(t) on left boundary
-          ddw2=h*h*pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(t) on right boundary
-
-          // Integrate over the interval recored the accumulated integral from inital
-          pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-          =pba->dsg_w_array[i*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-            + h*(12*(w1+w2)-(ddw1+ddw2))/24;
-
-          // Also do check to ensure |w|<1
-          if (ddw1==ddw2){
-            if (ddw1 != 0){
-              t = (1.0/2.0 +(w1-w2)/(ddw1)); // location of maximum for degenerate case where order spline becomes 2nd order
-              if(t>0 && t<1 ){
-                w_at_t = w1
-                          +t*((w2-w1)-(2*ddw1+ddw2)/6.0
-                            +t*(ddw1/2.0
-                              +t*(ddw2-ddw1)/6.0
-                            )
-                          );
-                class_test(w_at_t>-1 && w_at_t <1,
-                           pba->error_message,
-                           "|w|>1 in interval %i, check dsg_w_vals",i);
-              }
-            }
-          }
-          else{
-            desc = (pow(ddw1+ddw2,2)
-                    -ddw1*ddw2
-                    -6*(ddw2-ddw1)*(w2 - w1)
-                   )/3.0;
-            if(desc>=0){
-              desc_sqrt = sqrt(desc);
-              t= (ddw1-desc_sqrt)*(ddw1+ddw2)/(pow(ddw1,2)+pow(ddw2,2));
-              if(t>0 && t<1 ){
-                w_at_t = w1
-                          +t*((w2-w1)-(2*ddw1+ddw2)/6.0
-                            +t*(ddw1/2.0
-                              +t*(ddw2-ddw1)/6.0
-                            )
-                          );
-                class_test(w_at_t>-1 && w_at_t <1,
-                           pba->error_message,
-                           "|w|>1 in interval %i, check dsg_w_vals",i);
-              }
-              t= (ddw1+desc_sqrt)*(ddw1+ddw2)/(pow(ddw1,2)+pow(ddw2,2));
-               if(t>0 && t<1 ){
-                 w_at_t = w1
-                          +t*((w2-w1)-(2*ddw1+ddw2)/6.0
-                            +t*(ddw1/2.0
-                              +t*(ddw2-ddw1)/6.0
-                            )
-                          );
-                 class_test(w_at_t>-1 && w_at_t <1,
-                            pba->error_message,
-                            "|w|>1 in interval %i, check dsg_w_vals",i);
-              }
-            }
-          }
-
-          //printf("(%e,%e)\n",pba->dsg_log10a_vals[i+1],pba->dsg_w_array[(i+1)*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a] );
-        }
-
-        // Integrate w dlog10(a) over the interval (dsg_log10a_vals[0], a_today)
-        // Locally load info for the ith spline normalized such that the original interval
-        // log10a in [pba->dsg_log10a_vals[i], pba->dsg_log10a_vals[i+1]] is linearly mapped to t in [0,1]
-        // via t = (log10a - pba->dsg_log10a_vals[i])/h
-        // where h is the original interval length
-        // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d^2w_i()/dloga^2
-        h = pba->dsg_log10a_vals[dsg_index_a_today_interval+1] - pba->dsg_log10a_vals[dsg_index_a_today_interval];            // interval size
-        t =log10a_today- pba->dsg_log10a_vals[dsg_index_a_today_interval]; //Distance to left side of interval
-        w1=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on left boundary
-        w2=pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_w];  // w on right boundary
-        ddw1=h*h*pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2];   // w''(t) on left boundary
-        ddw2=h*h*pba->dsg_w_array[(dsg_index_a_today_interval+1)*pba->dsg_w_array_num_cols+pba->index_dsg_d2w_by_dlog10a2]; // w''(t) on right boundary
-
-        pba->dsg_ref_int_w=pba->dsg_w_array[dsg_index_a_today_interval*pba->dsg_w_array_num_cols+pba->index_dsg_int_w_dlog10a]
-        +t*(w1
-          +t/2.0*((w2-w1)-(2.0*ddw1+ddw2)/6.0
-            +t/3.0*(ddw1
-              +t/4.0*(ddw2-ddw1)
-            )
-          )
-        );
-
-        pba->dsg_ref_rho_dsg=pba->dsg_alpha*(1-pba->Omega0_lambda)*pba->H0*pba->H0;
-  }
-  //End of Additions
-
   /* in verbose mode, inform the user about the value of the ncdm
      masses in eV and about the ratio [m/omega_ncdm] in eV (the usual
      93 point something)*/
@@ -1033,6 +909,11 @@ int background_free_input(
     if (pba->scf_parameters != NULL)
       free(pba->scf_parameters);
   }
+  // Generalized Dark Matter Addtions
+  if (pba->gdm_alpha != 0.){
+    free(pba->gdm_w_array);
+  }
+  // End of Additions
   return _SUCCESS_;
 }
 
@@ -1103,10 +984,10 @@ int background_indices(
   if (pba->sgnK != 0)
     pba->has_curvature = _TRUE_;
 
-  /** Designer additions */
-  pba->has_dsg=_FALSE_;
-  if(pba->dsg_log10a_vals !=NULL)
-    pba->has_dsg = _TRUE_;
+  /** Generalized dark matter additions */
+  pba->has_gdm=_FALSE_;
+  if(pba->gdm_alpha !=0.0)
+    pba->has_gdm = _TRUE_;
 
   /** - initialize all indices */
 
@@ -1185,10 +1066,10 @@ int background_indices(
   /* - put here additional ingredients that you want to appear in the
      normal vector */
   /*    */
-  class_define_index(pba->index_bg_dsg_rho,pba->has_dsg,index_bg,1);
-  class_define_index(pba->index_bg_dsg_w,pba->has_dsg,index_bg,1);
-  class_define_index(pba->index_bg_dsg_alpha,pba->has_dsg,index_bg,1);
-  class_define_index(pba->index_bg_dsg_dw_over_dlna,pba->has_dsg,index_bg,1);
+  class_define_index(pba->index_bg_gdm_rho,pba->has_gdm,index_bg,1);
+  class_define_index(pba->index_bg_gdm_w,pba->has_gdm,index_bg,1);
+  class_define_index(pba->index_bg_gdm_alpha,pba->has_gdm,index_bg,1);
+  class_define_index(pba->index_bg_gdm_dw_over_dlna,pba->has_gdm,index_bg,1);
 
 
   /*    */
@@ -2309,6 +2190,13 @@ int background_initial_conditions(
              pba->error_message,
              pba->error_message);
 
+  // Generalize dark matter additions
+  if(pba->has_gdm == _TRUE_){
+    class_test(pvecback[pba->index_gdm_w]>1./3.,pba->error_message,
+               "Your choice for w(a--->0)=%g of the generalized dark matter is suspicious, since it is bigger than 1/3 there cannot be radiation domination at early times\n",
+               pvecback[pba->index_gdm_w]);
+  }
+
   /* Just checking that our initial time indeed is deep enough in the radiation
      dominated regime */
   class_test(fabs(pvecback[pba->index_bg_Omega_r]-1.) > ppr->tol_initial_Omega_r,
@@ -2478,11 +2366,14 @@ int background_output_titles(struct background * pba,
   class_store_columntitle(titles,"gr.fac. D",_TRUE_);
   class_store_columntitle(titles,"gr.fac. f",_TRUE_);
 
-  class_store_columntitle(titles,"alpha_dsg",pba->has_dsg);
-  class_store_columntitle(titles,"w_dsg",pba->has_dsg);
-  class_store_columntitle(titles,"dw_dsg/dlna",pba->has_dsg);
-  //class_store_columntitle(titles,"(.)rho_dsg",pba->has_dsg);
+  // Generalize dark matter additions
+  class_store_columntitle(titles,"(.)rho_gdm",pba->has_gdm);
+  class_store_columntitle(titles,"alpha_gdm",pba->has_gdm);
+  class_store_columntitle(titles,"w_gdm",pba->has_gdm);
+  class_store_columntitle(titles,"dw_gdm/dlna",pba->has_gdm);
 
+
+  // End of additions
   return _SUCCESS_;
 }
 
@@ -2542,10 +2433,10 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_D],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_f],_TRUE_,storeidx);
 
-    class_store_double(dataptr,pvecback[pba->index_bg_dsg_alpha],pba->has_dsg,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_dsg_w],pba->has_dsg,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_dsg_dw_over_dlna],pba->has_dsg,storeidx);
-    //class_store_double(dataptr,pvecback[pba->index_bg_dsg_rho],pba->has_dsg,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_gdm_rho],pba->has_gdm,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_gdm_alpha],pba->has_gdm,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_gdm_w],pba->has_gdm,storeidx);
+    class_store_double(dataptr,pvecback[pba->index_bg_gdm_dw_over_dlna],pba->has_gdm,storeidx);
   }
 
   return _SUCCESS_;
@@ -2654,7 +2545,6 @@ int background_derivs(
       (2*pvecback[pba->index_bg_H]*y[pba->index_bi_phi_prime_scf]
        + y[pba->index_bi_a]*dV_scf(pba,y[pba->index_bi_phi_scf])) ;
   }
-
   return _SUCCESS_;
 
 }

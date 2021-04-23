@@ -1074,10 +1074,10 @@ int perturb_indices(
   ppt->has_source_H_T_Nb_prime = _FALSE_;
   ppt->has_source_k2gamma_Nb = _FALSE_;
 
-  /* Designer Additions */
-  ppt->has_source_delta_dsg = _FALSE_;
-  ppt->has_source_theta_dsg = _FALSE_;
-  ppt->has_source_shear_dsg = _FALSE_;
+  /* Generalized dark matter Additions */
+  ppt->has_source_delta_gdm = _FALSE_;
+  ppt->has_source_theta_gdm = _FALSE_;
+  ppt->has_source_shear_gdm = _FALSE_;
   /* End of Additions */
 
   /** - source flags and indices, for sources that all modes have in
@@ -1165,9 +1165,9 @@ int perturb_indices(
           ppt->has_source_delta_dr = _TRUE_;
         if (pba->has_ncdm == _TRUE_)
           ppt->has_source_delta_ncdm = _TRUE_;
-        // Designer Additions
-        if (pba->has_dsg == _TRUE_)
-          ppt->has_source_delta_dsg = _TRUE_;
+        // Generalized dark matter Additions
+        if (pba->has_gdm == _TRUE_)
+          ppt->has_source_delta_gdm = _TRUE_;
         // End of Additions
 
         // Thanks to the following lines, (phi,psi) are also stored as sources
@@ -1201,9 +1201,9 @@ int perturb_indices(
           ppt->has_source_theta_dr = _TRUE_;
         if (pba->has_ncdm == _TRUE_)
           ppt->has_source_theta_ncdm = _TRUE_;
-        // Designer Additons
-        if (pba->has_dsg == _TRUE_){
-          ppt->has_source_theta_dsg = _TRUE_;
+        // Generalized dark matter Additons
+        if (pba->has_gdm == _TRUE_){
+          ppt->has_source_theta_gdm = _TRUE_;
         }
         // End of Additions
       }
@@ -1259,10 +1259,9 @@ int perturb_indices(
         ppt->has_source_k2gamma_Nb = _TRUE_;
       }
 
-      // Designer Additions
-      if(pba->has_dsg == _TRUE_ ){
-        if(pba->dsg_c_vis2 != 0)
-          ppt->has_source_shear_dsg;
+      // Generalized dark matter Additions
+      if(pba->has_gdm == _TRUE_ ){
+        ppt->has_source_shear_gdm;
       }
       // End of Additons
 
@@ -1307,10 +1306,10 @@ int perturb_indices(
       class_define_index(ppt->index_tp_eta_prime,  ppt->has_source_eta_prime, index_type,1);
       class_define_index(ppt->index_tp_H_T_Nb_prime,ppt->has_source_H_T_Nb_prime,index_type,1);
       class_define_index(ppt->index_tp_k2gamma_Nb, ppt->has_source_k2gamma_Nb,index_type,1);
-      /* Designer Additions */
-      class_define_index(ppt->index_tp_delta_dsg,  ppt->has_source_delta_dsg, index_type,1);
-      class_define_index(ppt->index_tp_theta_dsg,  ppt->has_source_theta_dsg, index_type,1);
-      class_define_index(ppt->index_tp_shear_dsg,  ppt->has_source_shear_dsg, index_type,1);
+      /* Generalized dark matter Additions */
+      class_define_index(ppt->index_tp_delta_gdm,  ppt->has_source_delta_gdm, index_type,1);
+      class_define_index(ppt->index_tp_theta_gdm,  ppt->has_source_theta_gdm, index_type,1);
+      class_define_index(ppt->index_tp_shear_gdm,  ppt->has_source_shear_gdm, index_type,1);
       /* End of Additions */
       ppt->tp_size[index_md] = index_type;
 
@@ -3189,10 +3188,10 @@ int perturb_prepare_k_output(struct background * pba,
       class_store_columntitle(ppt->scalar_titles, "rho_plus_p_theta_fld", pba->has_fld);
       class_store_columntitle(ppt->scalar_titles, "delta_p_fld", pba->has_fld);
 
-      /* Designer Additons */
-      class_store_columntitle(ppt->scalar_titles, "delta_dsg", pba->has_dsg);
-      class_store_columntitle(ppt->scalar_titles, "theta_dsg", pba->has_dsg);
-      class_store_columntitle(ppt->scalar_titles, "shear_dsg", ppt->has_source_shear_dsg);
+      /* Generalized dark matter Additons */
+      class_store_columntitle(ppt->scalar_titles, "delta_gdm", pba->has_gdm);
+      class_store_columntitle(ppt->scalar_titles, "theta_gdm", pba->has_gdm);
+      class_store_columntitle(ppt->scalar_titles, "shear_gdm", pba->has_gdm);
       /* End of Additions */
 
       ppt->number_of_scalar_titles =
@@ -3849,11 +3848,11 @@ int perturb_vector_init(
       }
     }
 
-    /* Designer Addtions */
-    if(pba->has_dsg == _TRUE_){
-      class_define_index(ppv->index_pt_delta_dsg,_TRUE_,index_pt,1); /* density of designer material */
-      class_define_index(ppv->index_pt_theta_dsg,_TRUE_,index_pt,1); /* velocity of designer material */
-      class_define_index(ppv->index_pt_shear_dsg,pba->dsg_c_vis2!=0,index_pt,1);    /* anisotropic pressure perturbation of designer material */
+    /* Generalized dark matter Addtions */
+    if(pba->has_gdm == _TRUE_){
+      class_define_index(ppv->index_pt_delta_gdm,_TRUE_,index_pt,1); /* density of Generalized dark matter material */
+      class_define_index(ppv->index_pt_theta_gdm,_TRUE_,index_pt,1); /* velocity of Generalized dark matter material */
+      class_define_index(ppv->index_pt_shear_gdm,_TRUE_,index_pt,1); /* anisotropic pressure perturbation of Generalized dark matter material */
     }
     /* End of Additions */
 
@@ -4267,13 +4266,11 @@ int perturb_vector_init(
           ppw->pv->y[ppw->pv->index_pt_phi_prime_scf];
       }
 
-      /* Designer Additions */
-      if (pba->has_dsg == _TRUE_) {
-        ppv->y[ppv->index_pt_delta_dsg]=ppw->pv->y[ppw->pv->index_pt_delta_dsg];
-        ppv->y[ppv->index_pt_theta_dsg]=ppw->pv->y[ppw->pv->index_pt_theta_dsg];
-        if(pba->dsg_c_vis2!=0){
-          ppv->y[ppv->index_pt_shear_dsg]=ppw->pv->y[ppw->pv->index_pt_shear_dsg];
-        }
+      /* Generalized dark matter Additions */
+      if (pba->has_gdm == _TRUE_) {
+        ppv->y[ppv->index_pt_delta_gdm]=ppw->pv->y[ppw->pv->index_pt_delta_gdm];
+        ppv->y[ppv->index_pt_theta_gdm]=ppw->pv->y[ppw->pv->index_pt_theta_gdm];
+        ppv->y[ppv->index_pt_shear_gdm]=ppw->pv->y[ppw->pv->index_pt_shear_gdm];
       }
       /* End of Additions */
 
@@ -5133,6 +5130,7 @@ int perturb_initial_conditions(struct precision * ppr,
 
   double a,a_prime_over_a;
   double w_fld,dw_over_da_fld,integral_fld;
+  double w_gdm,cs2_gdm,cv2_gdm; // gdm addition
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l3_ur=0.,eta=0.,delta_cdm=0.,alpha, alpha_prime;
   double delta_dr=0;
   double q,epsilon,k2;
@@ -5145,6 +5143,8 @@ int perturb_initial_conditions(struct precision * ppr,
   double delta_tot;
   double velocity_tot;
   double s2_squared;
+
+
 
   /** --> For scalars */
 
@@ -5352,13 +5352,15 @@ int perturb_initial_conditions(struct precision * ppr,
       //eta = ppr->curvature_ini * s2_squared * (1.-ktau_two/12./(15.+4.*fracnu)*(15.*s2_squared-10.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
       eta = ppr->curvature_ini * (1.-ktau_two/12./(15.+4.*fracnu)*(5.+4.*s2_squared*fracnu - (16.*fracnu*fracnu+280.*fracnu+325)/10./(2.*fracnu+15.)*tau*om));
 
-      // Designer Additions
-      if(pba->has_dsg==_TRUE_){
-        ppw->pv->y[ppw->pv->index_pt_delta_dsg]= ppw->pv->y[ppw->pv->index_pt_delta_g];
-        ppw->pv->y[ppw->pv->index_pt_theta_dsg]= ppw->pv->y[ppw->pv->index_pt_theta_g]; // Dsg TODO Generalize
-        if(pba->dsg_c_vis2!=0){
-          ppw->pv->y[ppw->pv->index_pt_shear_dsg]= 0; // Dsg TODO Generalize
-        }
+      // Generalized dark matter Additions TBC curvature
+      if(pba->has_gdm==_TRUE_){
+        w_gdm = ppw->pvecback[pba->index_gdm_w];
+        cs2_gdm = pba->gdm_c_eff2;
+        cv2_gdm = pba->gdm_c_vis2;
+
+        ppw->pv->y[ppw->pv->index_pt_delta_gdm]= - ktau_two/(16.-24.*w_gdm+12.*cs2_gdm)*((4.-3*cs2_gdm)*(1+w_gdm)+48.*cv2_gdm*(w_gdm-cs2_gdm)/(15.+4.*fracnu));
+        ppw->pv->y[ppw->pv->index_pt_theta_gdm]= - k*ktau_three/(16.-24.*w_gdm+12.*cs2_gdm)*(cs2_gdm+cv2_gdm*16./3.*(2.+3.*(cs2_gdm-w_gdm))/(15+4*fracnu)/(1+w_gdm));
+        ppw->pv->y[ppw->pv->index_pt_shear_gdm]= ktau_two*8.*cv2_gdm/(45.+12.*fracnu)/(1.+w_gdm);
       }
       // End of Additons
     }
@@ -5607,11 +5609,12 @@ int perturb_initial_conditions(struct precision * ppr,
 
       }
 
-      // Designer Addtions
-      if(pba->has_dsg==_TRUE_){
-        ppw->pv->y[ppw->pv->index_pt_delta_dsg] -= 4.*a_prime_over_a*alpha;
-        ppw->pv->y[ppw->pv->index_pt_theta_dsg] += k*k*alpha; // CHECK
-       //  ppw->pv->y[ppw->pv->index_pt_shear_dsg] unchanged
+      // Generalized dark matter Addtions
+      if(pba->has_gdm==_TRUE_){
+
+        ppw->pv->y[ppw->pv->index_pt_delta_gdm] -=  3*(1.+w_gdm)*a_prime_over_a*alpha;
+        ppw->pv->y[ppw->pv->index_pt_theta_gdm] += k*k*alpha; // CHECK
+       //  ppw->pv->y[ppw->pv->index_pt_shear_gdm] unchanged
       }
       // End of Additons
 
@@ -6557,6 +6560,9 @@ int perturb_total_stress_energy(
   double Gamma_fld, S, S_prime, theta_t, theta_t_prime, rho_plus_p_theta_fld_prime;
   double delta_p_b_over_rho_b;
 
+  /** Generalize dark matter addition */
+  double cs2_gdm,w_gdm,ca2_gdm;
+
   /** - wavenumber and scale factor related quantities */
 
   a = ppw->pvecback[pba->index_bg_a];
@@ -6914,14 +6920,17 @@ int perturb_total_stress_energy(
     }
 
     /* add your extra species here */
-    // Designer additions potential problem if used with fld we converte from anisotropic stress to shear
-    if (pba->has_dsg == _TRUE_){
-      ppw->delta_rho += ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
-      ppw->rho_plus_p_theta += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_theta_dsg];
-      if(pba->dsg_c_vis2!=0) ppw->rho_plus_p_shear +=(1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_shear_dsg];
-      ppw->delta_p += pba->dsg_c_eff2*ppw->pvecback[pba->index_bg_dsg_rho]*y[ppw->pv->index_pt_delta_dsg];
+    // Generalized dark matter additions potential problem if used with fld we converte from anisotropic stress to shear
+    if (pba->has_gdm == _TRUE_){
+      cs2_gdm = pba->gdm_c_eff2;
+      w_gdm = ppw->pvecback[pba->index_bg_gdm_w];
+      ca2_gdm = w_gdm - ppw->pvecback[pba->index_bg_gdm_dw_over_dlna]/3./(1.+w_gdm);
+      ppw->delta_rho += ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_delta_gdm];
+      ppw->rho_plus_p_theta += (1.+w_gdm)*ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_theta_gdm];
+      ppw->rho_plus_p_shear += (1.+w_gdm)*ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_shear_gdm];
+      ppw->delta_p += ppw->pvecback[pba->index_bg_gdm_rho]*(cs2_gdm*y[ppw->pv->index_pt_delta_gdm]+3.*(1.+w_gdm)*(cs2_gdm-ca2_gdm)*a_prime_over_a*y[ppw->pv->index_pt_theta_gdm]/k/k);
 
-      ppw->rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_dsg_w])*ppw->pvecback[pba->index_bg_dsg_rho];
+      ppw->rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_gdm_w])*ppw->pvecback[pba->index_bg_gdm_rho];
 
     }
     //End of additons
@@ -7711,15 +7720,15 @@ int perturb_sources(
           + theta_shift; // N-body gauge correction
       }
     }
-    // Designer additons
-    if (ppt->has_source_delta_dsg == _TRUE_){
-      _set_source_(ppt->index_tp_delta_dsg) = y[ppw->pv->index_pt_delta_dsg];
+    // Generalized dark matter additons
+    if (ppt->has_source_delta_gdm == _TRUE_){
+      _set_source_(ppt->index_tp_delta_gdm) = y[ppw->pv->index_pt_delta_gdm];
     }
-    if (ppt->has_source_theta_dsg == _TRUE_){
-      _set_source_(ppt->index_tp_theta_dsg) = y[ppw->pv->index_pt_theta_dsg];
+    if (ppt->has_source_theta_gdm == _TRUE_){
+      _set_source_(ppt->index_tp_theta_gdm) = y[ppw->pv->index_pt_theta_gdm];
     }
-    if (ppt->has_source_shear_dsg == _TRUE_){
-      _set_source_(ppt->index_tp_shear_dsg) = y[ppw->pv->index_pt_shear_dsg];
+    if (ppt->has_source_shear_gdm == _TRUE_){
+      _set_source_(ppt->index_tp_shear_gdm) = y[ppw->pv->index_pt_shear_gdm];
     }
     // end of additons
   }
@@ -7835,8 +7844,8 @@ int perturb_print_variables(double tau,
   double phi=0.,psi=0.,alpha=0.;
   double delta_temp=0., delta_chi=0.;
 
-  // Designer additons
-  double delta_dsg=0.,theta_dsg=0.,shear_dsg=0.;
+  // Generalized dark matter additons
+  double delta_gdm=0.,theta_gdm=0.,shear_gdm=0.;
   // End of additons
 
   double a,a2,H;
@@ -8116,12 +8125,11 @@ int perturb_print_variables(double tau,
       theta_scf = rho_plus_p_theta_scf/(pvecback[pba->index_bg_rho_scf]+pvecback[pba->index_bg_p_scf]);
 
     }
-    // Designer Additions
-    if (pba->has_dsg == _TRUE_){
-      delta_dsg = y[ppw->pv->index_pt_delta_dsg];
-      theta_dsg = y[ppw->pv->index_pt_theta_dsg];
-      if(pba->dsg_c_vis2 !=0)
-        shear_dsg = y[ppw->pv->index_pt_shear_dsg];
+    // Generalized dark matter Additions
+    if (pba->has_gdm == _TRUE_){
+      delta_gdm = y[ppw->pv->index_pt_delta_gdm];
+      theta_gdm = y[ppw->pv->index_pt_theta_gdm];
+      shear_gdm = y[ppw->pv->index_pt_shear_gdm];
     }
     // End of Additions
 
@@ -8178,10 +8186,10 @@ int perturb_print_variables(double tau,
         theta_scf += k*k*alpha;
       }
 
-      // Designer Additions
-      if (pba->has_dsg == _TRUE_){
-        delta_dsg -= 3.*(1+pvecback[pba->index_bg_dsg_w])*pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
-        theta_dsg += k*k*alpha;
+      // Generalized dark matter Additions
+      if (pba->has_gdm == _TRUE_){
+        delta_gdm -= 3.*(1+pvecback[pba->index_bg_gdm_w])*pvecback[pba->index_bg_H]*pvecback[pba->index_bg_a]*alpha;
+        theta_gdm += k*k*alpha;
       }
       // End of Additions
 
@@ -8259,21 +8267,21 @@ int perturb_print_variables(double tau,
     class_store_double(dataptr, ppw->rho_plus_p_theta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, ppw->delta_p_fld, pba->has_fld, storeidx);
 
-    // Designer Additions
-    if (pba->has_dsg == _TRUE_){
-    class_store_double(dataptr, delta_dsg, _TRUE_, storeidx);
-    class_store_double(dataptr, theta_dsg, _TRUE_, storeidx);
-    if(pba->dsg_c_vis2 !=0) class_store_double(dataptr, shear_dsg, _TRUE_, storeidx);
+    // Generalized dark matter Additions
+    if (pba->has_gdm == _TRUE_){
+    class_store_double(dataptr, delta_gdm, _TRUE_, storeidx);
+    class_store_double(dataptr, theta_gdm, _TRUE_, storeidx);
+    class_store_double(dataptr, shear_gdm, _TRUE_, storeidx);
     }
     // End of Additions
 
     //fprintf(ppw->perturb_output_file,"\n");
 
   }
-  /** Designer Additions */
-  int index_pt_delta_dsg;
-  int index_pt_theta_dsg;
-  int index_pt_shear_dsg;
+  /** Generalized dark matter Additions */
+  int index_pt_delta_gdm;
+  int index_pt_theta_gdm;
+  int index_pt_shear_gdm;
   /** End of Additions */
   /** - for tensor modes: */
   if (_tensors_) {
@@ -8464,7 +8472,7 @@ int perturb_derivs(double tau,
   double delta_idr=0., theta_idr=0.;
   double cb2,cs2,ca2,delta_p_b_over_rho_b;
   double metric_continuity=0.,metric_euler=0.,metric_shear=0.,metric_ufa_class=0.;
-  double metric_shear_prime=0.; //Designer reintroduction
+  double metric_shear_prime=0.; //Generalized dark matter reintroduction
   /* perturbed recombination (just to simplify the notation) */
 
   double H0=0.,Nnow=0.,n_H=0.,fHe=0.;
@@ -8494,7 +8502,7 @@ int perturb_derivs(double tau,
 
   double Sinv=0., dmu_idm_dr=0., dmu_idr=0., tca_slip_idm_dr=0.;
   // Desinger Additions
-  double delta_dsg_rest, c_dsg2;
+  double w_gdm,cs2_gdm,cv2_gdm,ca2_gdm;
   // End of Additons
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
@@ -8659,7 +8667,7 @@ int perturb_derivs(double tau,
       metric_continuity = pvecmetric[ppw->index_mt_h_prime]/2.;
       metric_euler = 0.;
       metric_shear = k2 * pvecmetric[ppw->index_mt_alpha];
-      metric_shear_prime = k2 * pvecmetric[ppw->index_mt_alpha_prime]; // Designer Uncommented
+      //metric_shear_prime = k2 * pvecmetric[ppw->index_mt_alpha_prime];
       metric_ufa_class = pvecmetric[ppw->index_mt_h_prime]/2.;
     }
 
@@ -8668,7 +8676,7 @@ int perturb_derivs(double tau,
       metric_continuity = -3.*pvecmetric[ppw->index_mt_phi_prime];
       metric_euler = k2*pvecmetric[ppw->index_mt_psi];
       metric_shear = 0.;
-      metric_shear_prime = 0.;  // Designer Uncommented
+      //metric_shear_prime = 0.;
       metric_ufa_class = -6.*pvecmetric[ppw->index_mt_phi_prime];
     }
 
@@ -9260,35 +9268,38 @@ int perturb_derivs(double tau,
       }
     }
 
-    // Designer Additions
-    if (pba->has_dsg == _TRUE_) {
+    // Generalized dark matter Additions
+    if (pba->has_gdm == _TRUE_) {
       //Some working variable for clarity
-      double w_dsg=pvecback[pba->index_bg_dsg_w];
-      double w_dsg_prime =pvecback[pba->index_bg_dsg_dw_over_dlna];
+      w_gdm=pvecback[pba->index_bg_gdm_w];
+      cs2_gdm = pba->gdm_c_eff2;
+      cv2_gdm = pba->gdm_c_vis2;
+      ca2_gdm = w_gdm-pvecback[pba->index_bg_gdm_dw_over_dlna]/(1.+w_gdm)/3.;
+      //delta_gdm evolution
+      dy[pv->index_pt_delta_gdm] = 3.*(w_gdm-cs2_gdm)*a_prime_over_a*y[pv->index_pt_delta_gdm]
+                                 -(1.+w_gdm)*(1+9.*(cs2_gdm-ca2_gdm)*a_prime_over_a*a_prime_over_a/k2)*y[pv->index_pt_theta_gdm]
+                                 -(1.+w_gdm)*metric_continuity;
+      // if (pba->has_nap_gdm == _TRUE_){
+      //       delta_gdm_rest=y[pv->index_pt_delta_gdm]+3.*a_prime_over_a*(1+w_gdm)*y[pv->index_pt_theta_gdm]/k2;
+      //       dy[pv->index_pt_delta_gdm] += -3*a_prime_over_a*(pba->gdm_c_eff2-ca2_gdm)*delta_gdm_rest;
+      // }
+
+      //theta_gdm evolution
+      dy[pv->index_pt_theta_gdm]=(3.*cs2_gdm-1.)*a_prime_over_a*y[pv->index_pt_theta_gdm]
+                                +cs2_gdm*k2/(1.+w_gdm)*y[pv->index_pt_delta_gdm]
+                                -k2*y[pv->index_pt_shear_gdm]
+                                +metric_euler;
+
+      //TBD refactor
+      // else{
+      // dy[pv->index_pt_theta_gdm] = -1.*a_prime_over_a*(1-3*ca2_gdm)*y[pv ->index_pt_theta_gdm]+ca2_gdm/(1+w_gdm)*k2*y[pv->index_pt_delta_gdm] -1.*k2*s2_squared*y[pv->index_pt_shear_gdm] + metric_euler;
+      // }
 
 
-      c_dsg2=w_dsg-w_dsg_prime/(1+w_dsg)/3;
-      //delta_dsg evolution
-      dy[pv->index_pt_delta_dsg] = y[pv->index_pt_delta_dsg]*w_dsg_prime*a_prime_over_a/(1+w_dsg)-(1+w_dsg)*(y[pv->index_pt_theta_dsg]+metric_continuity);
-      if (pba->has_nap_dsg == _TRUE_){
-            delta_dsg_rest=y[pv->index_pt_delta_dsg]+3.*a_prime_over_a*(1+w_dsg)*y[pv->index_pt_theta_dsg]/k2;
-            dy[pv->index_pt_delta_dsg] += -3*a_prime_over_a*(pba->dsg_c_eff2-c_dsg2)*delta_dsg_rest;
-      }
-
-      //theta_dsg evolution
-      if (pba->has_nap_dsg == _TRUE_){
-        dy[pv->index_pt_theta_dsg]= -1.*a_prime_over_a*y[pv->index_pt_theta_dsg]+ pba->dsg_c_eff2*delta_dsg_rest*k2/(1+w_dsg)+ metric_euler;
-      }
-      else{
-      dy[pv->index_pt_theta_dsg] = -1.*a_prime_over_a*(1-3*c_dsg2)*y[pv ->index_pt_theta_dsg]+c_dsg2/(1+w_dsg)*k2*y[pv->index_pt_delta_dsg] + metric_euler;
-      }
-      if (pba->dsg_c_vis2 != 0.) dy[pv->index_pt_theta_dsg] += -1.*k2*s2_squared*y[pv->index_pt_shear_dsg];
-
-      //shear_dsg evolution
-      //printf("(%e,%e,%e,%e)\n",dy[pv->index_pt_delta_dsg],y[pv->index_pt_theta_dsg],dy[pv->index_pt_delta_dsg],dy[pv->index_pt_theta_dsg]);
-      if (pba->dsg_c_vis2 != 0.){
-        dy[pv->index_pt_shear_dsg] =-3.*a_prime_over_a*y[pv->index_pt_shear_dsg]+pba->dsg_c_vis2*2*(y[pv->index_pt_theta_dsg]+metric_shear);
-      }
+      //shear_gdm evolution
+      //printf("(%e,%e,%e,%e)\n",dy[pv->index_pt_delta_gdm],y[pv->index_pt_theta_gdm],dy[pv->index_pt_delta_gdm],dy[pv->index_pt_theta_gdm]);
+      dy[pv->index_pt_shear_gdm] = -3.*a_prime_over_a*y[pv->index_pt_shear_gdm]
+                                +cv2_gdm*8./3./(1.+w_gdm)*(y[pv->index_pt_theta_gdm]+metric_shear);
     }
     // End of Addtions
     /** - ---> metric */

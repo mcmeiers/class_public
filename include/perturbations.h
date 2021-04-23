@@ -323,13 +323,13 @@ struct perturbs
 
   int * tp_size; /**< number of types tp_size[index_md] included in computation for each mode */
 
-  /** Designer Additions */
-  short has_source_delta_dsg;
-  short has_source_theta_dsg;
-  short has_source_shear_dsg;
-  int index_tp_delta_dsg;
-  int index_tp_theta_dsg;
-  int index_tp_shear_dsg;
+  /** Generalized dark matter Additions */
+  short has_source_delta_gdm;
+  short has_source_theta_gdm;
+  short has_source_shear_gdm;
+  int index_tp_delta_gdm;
+  int index_tp_theta_gdm;
+  int index_tp_shear_gdm;
   /** End of Additions */
   //@}
 
@@ -488,10 +488,10 @@ struct perturb_vector
   int index_pt_shear_idr; /**< shear of interacting dark radiation */
   int index_pt_l3_idr;    /**< l=3 of interacting dark radiation */
   int l_max_idr;          /**< max momentum in Boltzmann hierarchy (at least 3) for interacting dark radiation */
-  /** Designer Additions */
-  int index_pt_delta_dsg;
-  int index_pt_theta_dsg;
-  int index_pt_shear_dsg;
+  /** Generalized dark matter Additions */
+  int index_pt_delta_gdm;
+  int index_pt_theta_gdm;
+  int index_pt_shear_gdm;
   /** End of Additions */
 
 /* perturbed recombination */
