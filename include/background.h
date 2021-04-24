@@ -302,25 +302,7 @@ struct background
 
   //@}
 
-<<<<<<< HEAD
 
-  /**
-   *@name - some flags needed for calling background functions
-   */
-
-  //@{
-
-  short short_info;  /**< flag for calling background_at_eta and return little information */
-  short normal_info; /**< flag for calling background_at_eta and return medium information */
-  short long_info;   /**< flag for calling background_at_eta and return all information */
-
-  short inter_normal;  /**< flag for calling background_at_eta and find position in interpolation table normally */
-  short inter_closeby; /**< flag for calling background_at_eta and find position in interpolation table starting from previous position in previous call */
-
-  //@}
-
-=======
->>>>>>> master
   /** @name - technical parameters */
 
   //@{
@@ -350,9 +332,10 @@ struct background
 
   int     gdm_last_index;         /**< keeps track of the last index used to speed up spline interpolations */
 
-  double  gdm_z_alpha;                /** reference redshift for energy density */
-  double  gdm_alpha;              /** Omega_gdm/Omega_bg at z_alpha */
-  double  rho_alpha_gdm;   /** the value of Omega_0_gdm */
+  double  gdm_z_alpha;         /** reference redshift for energy density */
+  double  gdm_alpha;           /** Omega_gdm/Omega_bg at z_alpha */
+  double  rho_alpha_gdm;       /** the value of rho_gdm at z_alpha */
+  double  Omega0_gdm;           /** the value of Omega_0_gdm */
 
   int     index_bg_gdm_rho;    /**< index for storage of energy dendisty of the Generalized dark matter fluid */
   int     index_bg_gdm_alpha;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */

@@ -8297,7 +8297,6 @@ int perturbations_print_variables(double tau,
     class_store_double(dataptr, ppw->delta_rho_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, ppw->rho_plus_p_theta_fld, pba->has_fld, storeidx);
     class_store_double(dataptr, ppw->delta_p_fld, pba->has_fld, storeidx);
-<<<<<<< HEAD
 
     // Generalized dark matter Additions
     if (pba->has_gdm == _TRUE_){
@@ -8307,10 +8306,7 @@ int perturbations_print_variables(double tau,
     }
     // End of Additions
 
-    //fprintf(ppw->perturb_output_file,"\n");
-=======
-    //fprintf(ppw->perturbations_output_file,"\n");
->>>>>>> master
+
 
   }
   /** Generalized dark matter Additions */

@@ -2265,13 +2265,9 @@ int background_initial_conditions(
                pvecback_integration[pba->index_bi_phi_scf]);
   }
 
-  /* Infer pvecback from pvecback_integration */
-<<<<<<< HEAD
-  /*printf("(%e,%e)\n", pba->Omega0_g,pba->H0);*/
-  class_call(background_functions(pba, pvecback_integration, pba->normal_info, pvecback),
-=======
+
   class_call(background_functions(pba, a, pvecback_integration, normal_info, pvecback),
->>>>>>> master
+
              pba->error_message,
              pba->error_message);
 
