@@ -623,8 +623,8 @@ int background_functions(
     pvecback[pba->index_bg_gdm_w]=w;
     pvecback[pba->index_bg_gdm_dw_over_dlna]= dw_dlog10a*log10(_E_);
 
-    rho_tot += pvecback[pba->index_bg_gdm_rho];
-    p_tot += pvecback[pba->index_bg_gdm_w]*pvecback[pba->index_bg_gdm_rho];
+    rho_tot += rho_gdm;
+    p_tot += w*rho_gdm;
     dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
 
  }
@@ -1108,7 +1108,7 @@ int background_indices(
 
   /* - put here additional ingredients that you want to appear in the
      normal vector */
-  /*    */
+  /* inxed for generalized dark matter    */
   class_define_index(pba->index_bg_gdm_rho,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_w,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_alpha,pba->has_gdm,index_bg,1);

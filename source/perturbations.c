@@ -5140,7 +5140,7 @@ int perturbations_initial_conditions(struct precision * ppr,
 
   double a,a_prime_over_a;
   double w_fld,dw_over_da_fld,integral_fld;
-  double w_gdm,cs2_gdm,cv2_gdm; // gdm addition
+  double w_gdm,cs2_gdm,cv2_gdm, rho_gdm_over_rho_r ; // generalized dark matter addition
   double delta_ur=0.,theta_ur=0.,shear_ur=0.,l3_ur=0.,eta=0.,delta_cdm=0.,alpha, alpha_prime;
   double delta_dr=0;
   double q,epsilon,k2;
@@ -5186,6 +5186,7 @@ int perturbations_initial_conditions(struct precision * ppr,
 
     /* 8piG/3 rho_nu(t_i) (all neutrinos and collisionless relics being relativistic at that time) */
     rho_nu = 0.;
+
 
     if (pba->has_cdm == _TRUE_) {
       rho_m += ppw->pvecback[pba->index_bg_rho_cdm];
@@ -5244,6 +5245,13 @@ int perturbations_initial_conditions(struct precision * ppr,
 
     /* Omega_m(t_i) / Omega_r(t_i) */
     rho_m_over_rho_r = rho_m/rho_r;
+
+    /* Generalized dark matter additions */
+
+    if(pba->has_gdm == _TRUE_){
+      rho_gdm_over_rho_r =  ppw->pvecback[pba->index_bg_gdm_rho]/rho_r;
+    }
+
 
     /* omega = Omega_m(t_i) a(t_i) H(t_i) / sqrt(Omega_r(t_i))
        = Omega_m(t_0) a(t_0) H(t_0) / sqrt(Omega_r(t_0)) assuming rho_m in a-3 and rho_r in a^-4
@@ -5571,6 +5579,11 @@ int perturbations_initial_conditions(struct precision * ppr,
         velocity_tot += rho_m_over_rho_r*fracidm_dr*ppw->pv->y[ppw->pv->index_pt_theta_idm_dr]/(1.+rho_m_over_rho_r);
       }
 
+      if(pba->has_gdm==_TRUE_){
+        delta_tot = (delta_tot*(1.+rho_m_over_rho_r)+rho_gdm_over_rho_r*ppw->pv->y[ppw->pv->index_pt_delta_gdm])/(1.+rho_m_over_rho_r+rho_gdm_over_rho_r);
+        velocity_tot = (velocity_tot*(1.+rho_m_over_rho_r)+(1.+w_gdm)*rho_gdm_over_rho_r*ppw->pv->y[ppw->pv->index_pt_theta_gdm])/(1.+rho_m_over_rho_r+rho_gdm_over_rho_r);
+      }
+
       alpha = (eta + 3./2.*a_prime_over_a*a_prime_over_a/k/k/s2_squared*(delta_tot + 3.*a_prime_over_a/k/k*velocity_tot))/a_prime_over_a;
 
       ppw->pv->y[ppw->pv->index_pt_phi] = eta - a_prime_over_a*alpha;
@@ -5632,8 +5645,7 @@ int perturbations_initial_conditions(struct precision * ppr,
 
       // Generalized dark matter Addtions
       if(pba->has_gdm==_TRUE_){
-
-        ppw->pv->y[ppw->pv->index_pt_delta_gdm] -=  3*(1.+w_gdm)*a_prime_over_a*alpha;
+        ppw->pv->y[ppw->pv->index_pt_delta_gdm] -= 3*(1.+w_gdm)*a_prime_over_a*alpha;
         ppw->pv->y[ppw->pv->index_pt_theta_gdm] += k*k*alpha; // CHECK
        //  ppw->pv->y[ppw->pv->index_pt_shear_gdm] unchanged
       }
@@ -6960,7 +6972,7 @@ int perturbations_total_stress_energy(
       ppw->rho_plus_p_shear += (1.+w_gdm)*ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_shear_gdm];
       ppw->delta_p += ppw->pvecback[pba->index_bg_gdm_rho]*(cs2_gdm*y[ppw->pv->index_pt_delta_gdm]+3.*(1.+w_gdm)*(cs2_gdm-ca2_gdm)*a_prime_over_a*y[ppw->pv->index_pt_theta_gdm]/k/k);
 
-      ppw->rho_plus_p_tot += (1.+ppw->pvecback[pba->index_bg_gdm_w])*ppw->pvecback[pba->index_bg_gdm_rho];
+      ppw->rho_plus_p_tot += (1.+w_gdm)*ppw->pvecback[pba->index_bg_gdm_rho];
 
     }
     //End of additons
@@ -6974,9 +6986,9 @@ int perturbations_total_stress_energy(
       if (pba->use_ppf == _FALSE_) {
         ppw->delta_rho_fld = ppw->pvecback[pba->index_bg_rho_fld]*y[ppw->pv->index_pt_delta_fld];
         ppw->rho_plus_p_theta_fld = (1.+w_fld)*ppw->pvecback[pba->index_bg_rho_fld]*y[ppw->pv->index_pt_theta_fld];
-	ca2_fld = w_fld - w_prime_fld / 3. / (1.+w_fld) / a_prime_over_a;
-	/** We must gauge transform the pressure perturbation from the fluid rest-frame to the gauge we are working in */
-	ppw->delta_p_fld = pba->cs2_fld * ppw->delta_rho_fld + (pba->cs2_fld-ca2_fld)*(3*a_prime_over_a*ppw->rho_plus_p_theta_fld/k/k);
+	      ca2_fld = w_fld - w_prime_fld / 3. / (1.+w_fld) / a_prime_over_a;
+	      /** We must gauge transform the pressure perturbation from the fluid rest-frame to the gauge we are working in */
+	      ppw->delta_p_fld = pba->cs2_fld * ppw->delta_rho_fld + (pba->cs2_fld-ca2_fld)*(3*a_prime_over_a*ppw->rho_plus_p_theta_fld/k/k);
       }
       else {
         s2sq = ppw->s_l[2]*ppw->s_l[2];

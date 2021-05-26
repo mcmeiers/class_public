@@ -2968,11 +2968,12 @@ int input_read_parameters_species(struct file_content * pfc,
       wrksp_intgrl=pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
                    +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                        -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
-      // Calculate Omega0_gdm = alpha * (Omega_rad(z_alpha+1)+Omega_mat)(z_alpha+1)^3 *(z_alpha+1)^-3 exp(-3(int w frop lna_alpha to lna_today ))
+      // Calculate Omega0_gdm = rho_gdm_0/ H0^2
+      // Where rho_gdm_0= rho_alpha * (z_alpha+1)^-3 exp(-3(int w frop lna_alpha to lna_today ))
       // The factors of (z+1)^3 cancel one another, we must also inclucde a factor of log(10) to account for our integral uses log10a
       pba->Omega0_gdm += pba->rho_alpha_gdm
                          *pow(1/(z_alpha+1),3)
-                         *exp(-3.0*log(10)*wrksp_intgrl);
+                         *exp(-3.0*log(10)*wrksp_intgrl)/pba->H0/pba->H0;
       }
     }
 
@@ -3037,7 +3038,7 @@ int input_read_parameters_species(struct file_content * pfc,
   Omega_tot += pba->Omega0_idm_dr;
   Omega_tot += pba->Omega0_idr;
   Omega_tot += pba->Omega0_ncdm_tot;
-  Omega_tot += pba->Omega0_gdm;
+  Omega_tot += pba->Omega0_gdm;   // generalized dark matter addition
   /* Step 1 */
   if (flag1 == _TRUE_){
     pba->Omega0_lambda = param1;
