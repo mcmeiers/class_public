@@ -5378,7 +5378,7 @@ int perturbations_initial_conditions(struct precision * ppr,
 
       // Generalized dark matter Additions TBC curvature
       if(pba->has_gdm==_TRUE_){
-        w_gdm = ppw->pvecback[pba->index_gdm_w];
+        w_gdm = ppw->pvecback[pba->index_bg_gdm_w];
         cs2_gdm = pba->gdm_c_eff2;
         cv2_gdm = pba->gdm_c_vis2;
 
