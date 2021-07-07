@@ -577,7 +577,7 @@ int background_functions(
   if(pba->has_gdm == _TRUE_){
     double log10a=log10(a);
     // find  w, dw_dlog10a, int_w_dlog10a, rho_gdm depending on spline method
-    double w, dw_dlog10a, int_w_dlog10a ,rho_gdm;
+    double w, dw_dlog10a,d2w_dlog10a2, int_w_dlog10a ,rho_gdm;
     if(pba->w_spl_modulator == 0){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
@@ -611,7 +611,8 @@ int background_functions(
       double ddw2=h*h*pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2]; // w''(t) on right boundary
 
       w = r*w1 + t*w2 + ((r*r-1)*r*ddw1  +(t*t-1)*t*ddw2)/6.;
-      dw_dlog10a = ((w2-w1)+ ((3*t*t*-1)*ddw2-(3*r*r-1)*ddw1)/6)/h;
+      dw_dlog10a = ((w2-w1)+ ((3*t*t-1)*ddw2-(3*r*r-1)*ddw1)/6)/h;
+      d2w_dlog10a2 = (ddw2*t+ddw1*r)/h/h;
       int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
                       +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
@@ -633,27 +634,43 @@ int background_functions(
       }
       gdm_interval_index=pba->gdm_last_index;
 
-      // Via the atanh(w) spline evaluate w and d2w/dlog10a2 on interval ends
-      // Use these to approximate w(log10a) as a cubic in log10a
-      // For clarity we map log10a to t = (log10a - gdm_log10a_vals[i])/h
-      // which linearly maps the original interval to [0,1]
-      // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d2w_by_dlog10a2
-      // d2w_by_dlog10a2 = (1-w^2)*(d2atanh_w_by_dlog10a2 - 2*w*datanh_w_by_dlog10a^2)
+      // Use the atanh(w) spline to calculate w(a).
+      // For simplicity we normalize the interval we are splining over to [0,1]
+      // by mapping  log10a to t = (log10a - gdm_log10a_vals[i])/h
+      // where h is the origninal interval length.
+      // Thus P(t) = athanh(w(log10a)) = t*atanhw2 + (1-t)*atanhw1 + ((1-t)*((1-t)^2-1)*ddatanhw1 + t*(t^2-1)*ddatanhw2)/6
+      //      w(t) = tanh(P(t))
+      //      dw/dlog10a = sech(P(t))^2*P'(t)/h
+      //      P'(t) = (atanhw2-atanhw1)+(ddatanhw2-ddatanhw1)/6 +(t^2*ddatanhw1-(1-t)^2*ddatanhw2)
+      // The derivative wrt log10a is similarly evaluated Via
+      // dw_dlog10a = sech()
+      // The intergral of w uses information from the atanh spline to
+      // evaluate w and d2w/dlog10a2 on interval ends.
+      // This information is used to approximate w(log10a) as a cubic in log10a
+      // which gives an integrable approximation for the interpolations.
+      //     w_i(0)=w1
+      //     w_i(1)=w2
+      //     w_i''(t)= h^2 * d2w_by_dlog10a2
+      //     d2w_by_dlog10a2 = (1-w^2)*(d2atanh_w_by_dlog10a2 - 2*w*datanh_w_by_dlog10a^2)
       double h = pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]
           - pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super];            // interval size
       double t = (log10a - pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super])/h;                           // normalized distance from left side of interval
       double r = 1-t;
+      double atanhw1 = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w];  // arctanh(w) on left boundary
+      double atanhw2 = pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w];  // arctanh(w) on right boundary
+      double ddatanhw1 = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2];  // d^2arctanh(w)/dlog10a^2 on left boundary
+      double ddatanhw2 = pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2];  // d^2arctanh(w)/dlog10a^2on right boundary
       double w1= pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on left boundary
       double w2= pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on right boundary
-      double ddw1=h*h*(1-w1*w1)*(pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                          -2*w1*pow(w2-w1-1/6.0*(2*pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                                                 +pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2));   // w''(t) on left boundary
-      double ddw2=h*h*(1-w2*w2)*(pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                          -2*w2*pow(w2-w1+1/6.0*(pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                                                 +2*pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2)); // w''(t) on right boundary
+      double ddw1=h*h*(1-w1*w1)*(ddatanhw1 - 2*w1*pow(atanhw2-atanhw1-1/6.0*(2*ddatanhw1+ddatanhw2),2)); // w''(t) on left boundary
+      double ddw2=h*h*(1-w2*w2)*(ddatanhw2 - 2*w2*pow(atanhw2-atanhw1+1/6.0*(ddatanhw1+2*ddatanhw2),2)); // w''(t) on right boundary
 
-      w = r*w1 + t*w2 + ((r*r-1)*r*ddw1  +(t*t-1)*t*ddw2)/6.;
-      dw_dlog10a = ((w2-w1)+ ((3*t*t*-1)*ddw2-(3*r*r-1)*ddw1)/6)/h;
+      double atanhw = r*atanhw1 + t*atanhw2 + ((r*r-1)*r*ddatanhw1  +(t*t-1)*t*ddatanhw2)/6.;
+      double datanhw = atanhw2 - atanhw1 + (ddatanhw2*(3.*t*t-1.) - ddatanhw1*(3*r*r-1.))/6.;
+      double ddatanhw = ddatanhw2*t + ddatanhw1*r;
+      w = tanh(atanhw);
+      dw_dlog10a = (1-w*w)*datanhw/h;
+      d2w_dlog10a2 =  (1-w*w)*(ddatanhw-2*w*datanhw*datanhw)/h/h;
       int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
                       +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
@@ -665,10 +682,13 @@ int background_functions(
 
     pvecback[pba->index_bg_gdm_w]=w;
     pvecback[pba->index_bg_gdm_dw_over_dlna]= dw_dlog10a*log10(_E_);
+    pvecback[pba->index_bg_gdm_d2w_over_dlna2]= d2w_dlog10a2*log10(_E_)*log10(_E_);
 
     rho_tot += rho_gdm;
     p_tot += w*rho_gdm;
     dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
+    rho_r += -3.*rho_gdm*(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+9.*w*(-1.-pvecback[pba->index_bg_gdm_dw_over_dlna]+w*w))/8;
+    rho_m += rho_gdm*(1+(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+pvecback[pba->index_bg_gdm_dw_over_dlna])/3.+w*(-3.-3*pvecback[pba->index_bg_gdm_dw_over_dlna]-w+3.*w*w));
 
  }
 
@@ -1157,7 +1177,7 @@ int background_indices(
   class_define_index(pba->index_bg_gdm_w,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_alpha,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_dw_over_dlna,pba->has_gdm,index_bg,1);
-
+  class_define_index(pba->index_bg_gdm_d2w_over_dlna2,pba->has_gdm,index_bg,1);
 
   /*    */
 
@@ -2500,11 +2520,18 @@ int background_output_titles(
   class_store_columntitle(titles,"gr.fac. f",_TRUE_);
 
   // Generalize dark matter additions
-  class_store_columntitle(titles,"(.)rho_gdm",pba->has_gdm);
-  class_store_columntitle(titles,"alpha_gdm",pba->has_gdm);
-  class_store_columntitle(titles,"w_gdm",pba->has_gdm);
-  class_store_columntitle(titles,"dw_gdm/dlna",pba->has_gdm);
-  class_store_columntitle(titles,"int_w_dlna",pba->has_gdm);
+  if(pba->has_gdm) {
+    class_store_columntitle(titles,"(.)rho_gdm",_TRUE_);
+    class_store_columntitle(titles,"alpha_gdm",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_ff",_TRUE_;
+    class_store_columntitle(titles,"(.)rho_gdm_r",_TRUE_;
+    class_store_columntitle(titles,"(.)rho_gdm_d",_TRUE_;
+    class_store_columntitle(titles,"(.)rho_gdm_lamda",_TRUE_;
+    class_store_columntitle(titles,"w_gdm",_TRUE_);
+    class_store_columntitle(titles,"dw_gdm/dlna",_TRUE_);
+    class_store_columntitle(titles,"int_w_dlna",_TRUE_);
+  }
+
 
 
   // End of additions
@@ -2578,11 +2605,21 @@ int background_output_data(
     class_store_double(dataptr,pvecback[pba->index_bg_D],_TRUE_,storeidx);
     class_store_double(dataptr,pvecback[pba->index_bg_f],_TRUE_,storeidx);
 
-    class_store_double(dataptr,pvecback[pba->index_bg_gdm_rho],pba->has_gdm,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_gdm_alpha],pba->has_gdm,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_gdm_w],pba->has_gdm,storeidx);
-    class_store_double(dataptr,pvecback[pba->index_bg_gdm_dw_over_dlna],pba->has_gdm,storeidx);
-    class_store_double(dataptr,log(pvecback[pba->index_bg_gdm_rho]/(pba->rho_alpha_gdm*pow(1/(pvecback[pba->index_bg_a]*(1+pba->gdm_z_alpha)),3)))/(-3.0),pba->has_gdm,storeidx);
+    if (pba->has_gdm) {
+      double rho_gdm = pvecback[pba->index_bg_gdm_rho];
+      double w = pvecback[pba->index_bg_gdm_w];
+      double dw_over_dlna = pvecback[pba->index_bg_gdm_dw_over_dlna]
+      double d2w_over_dlna2 = pvecback[pba->index_bg_gdm_d2w_over_dlna2]
+      class_store_double(dataptr,rho_gdm,_TRUE_,storeidx);
+      class_store_double(dataptr,pvecback[pba->index_bg_gdm_alpha],_TRUE_,storeidx);
+      class_store_double(dataptr,rho_gdm*(d2w_over_dlna2-2.*dw_over_dlna+3.*w*(-1.-3.*dw_over_dlna+2.*w+3.*w*w))/12.,_TRUE_,storeidx);
+      class_store_double(dataptr,-3.*rho_gdm*(d2w_over_dlna2+9.*w*(-1.-dw_over_dlna+w*w))/8.,_TRUE_,storeidx);
+      class_store_double(dataptr,rho_gdm*(1+(d2w_over_dlna2+dw_over_dlna)/3.+w*(-3.-3*dw_over_dlna-w+3.*w*w)),_TRUE_,storeidx);
+      class_store_double(dataptr,rho_gdm*(-d2w_over_dlna2-4.*dw_over_dlna+3.*w*(-1.+3.*dw_over_dlna+4.*w-3.*w*w))/24.,_TRUE_,storeidx);
+      class_store_double(dataptr,w,_TRUE_,storeidx);
+      class_store_double(dataptr,dw_over_dlna,_TRUE_,storeidx);
+      class_store_double(dataptr,log(rho_gdm/(pba->rho_alpha_gdm*pow(1/(pvecback[pba->index_bg_a]*(1+pba->gdm_z_alpha)),3)))/(-3.0),_TRUE_,storeidx);
+    }
   }
 
   return _SUCCESS_;

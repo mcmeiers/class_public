@@ -348,7 +348,8 @@ struct background
   int     index_bg_gdm_rho;    /**< index for storage of energy dendisty of the Generalized dark matter fluid */
   int     index_bg_gdm_alpha;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */
   int     index_bg_gdm_w;      /**< index for storage of the state parameter of the Generalized dark matter fluid */
-  int     index_bg_gdm_dw_over_dlna;      /**< index for storage of the state parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_dw_over_dlna;      /**< index for storage of the derivative of the equation of state parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_d2w_over_dlna2;    /**< index for storage of the 2nd derivative of the equation of state parameter of the Generalized dark matter fluid */
 
   short   has_nap_gdm;        /**<  include non-adiabatic pressure? (note we use the generalized dark matter model of W. Hu) */
   double  gdm_c_eff2;          /**<  the rest frame speed of sound */

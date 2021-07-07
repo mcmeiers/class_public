@@ -2843,6 +2843,7 @@ int input_read_parameters_species(struct file_content * pfc,
       int gdm_a_today_interval_idx=0;
       double log10a_alpha=-1.0*log10(pba->gdm_z_alpha+1.0);
       double log10a_today= 0.0;
+      class_test(pba->gdm_log10a_vals[0]>log10(ppr->a_ini_over_a_today_default),pba->error_message,"Generalized dark matter log10a range does not include a_ini. Check your .ini or .pre file.");
       class_test(pba->gdm_log10a_vals[0]>log10a_alpha,pba->error_message,"Generalized dark matter log10a range does not include z_alpha. Check your .ini file.");
       class_test(pba->gdm_log10a_vals[0]>log10a_today,pba->error_message,"Generalized dark matter log10a range does not include a_today. Check your .ini file.");
       for (size_t i = 1; i < pba->gdm_num_in_knots; i++) {
@@ -2982,8 +2983,8 @@ int input_read_parameters_species(struct file_content * pfc,
 
     if(pba->w_spl_modulator == 1){
       double gdm_max_spl_Delta_log10a = 0.1;
-      class_call(parser_read_double(pfc,"gdm_max_spl_Delta_log10a",&gdm_max_spl_Delta_log10a,&flag1,errmsg),
-                 errmsg,
+      class_call(parser_read_double(pfc,"gdm_max_spl_delta_log10a",&gdm_max_spl_Delta_log10a,&flag1,errmsg),
+                 errmsg ,
                  errmsg);
       int gdm_num_super_sample_knots = 0;
       int* gdm_super_sample_knot_group_size;
@@ -3008,6 +3009,7 @@ int input_read_parameters_species(struct file_content * pfc,
       //Store log10a for today and where alpha is provided, check occurs before end of provided knots
       double log10a_alpha=-1.0*log10(pba->gdm_z_alpha+1.0);
       double log10a_today= 0.0;
+      class_test(pba->gdm_log10a_vals[0]>log10(ppr->a_ini_over_a_today_default),pba->error_message,"Generalized dark matter log10a range does not include a_ini. Check your .ini or .pre file.");
       class_test(pba->gdm_log10a_vals[0]>log10a_alpha,pba->error_message,"Generalized dark matter log10a range does not include z_alpha. Check your .ini file.");
       class_test(pba->gdm_log10a_vals[0]>log10a_today,pba->error_message,"Generalized dark matter log10a range does not include a_today. Check your .ini file.");
       class_test(pba->gdm_log10a_vals[pba->gdm_num_in_knots-1]<log10a_alpha,pba->error_message,"Generalized dark matter log10a range does not include z_alpha. Check your .ini file.");
@@ -3093,12 +3095,15 @@ int input_read_parameters_species(struct file_content * pfc,
         w1= pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on left boundary
         w2= pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on right boundary
         ddw1=h*h*(1-w1*w1)*(pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                            -2*w1*pow(w2-w1-1/6.0*(2*pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                                                   +pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2));   // w''(t) on left boundary
+                            -2*w1*pow(pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w]
+                                      -pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w]
+                                      -1/6.0*(2*pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
+                                              +pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2));   // w''(t) on left boundary
         ddw2=h*h*(1-w2*w2)*(pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                            -2*w2*pow(w2-w1+1/6.0*(pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
-                                                   +2*pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2)); // w''(t) on right boundary
-
+                            -2*w2*pow(pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w]
+                                      -pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w]
+                                      +1/6.0*(pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
+                                              +2*pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2)); // w''(t) on right boundary
         // Integrate over the interval recored the accumulated integral from inital
         pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
           =pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
@@ -3106,11 +3111,12 @@ int input_read_parameters_species(struct file_content * pfc,
         // If log10a_alpha lies in interval
         // Calculate int(w) on interval [gdm_log10a_vals[0],log10a_alpha]
         if(i ==  gdm_alpha_interval_idx){
-          t = (log10a_alpha- pba->gdm_log10a_vals[i])/h;
+          t = (log10a_alpha- pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super])/h;
           r = 1-t;
           wrksp_intgrl=pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
                        +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                            -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
+
           // Shift previous integrals to be integrating from log10a_alpha
           // Future ones adjusted automatically since next update will use a shifted value.
           for(size_t j=0; j<i+2;j++){
@@ -3118,7 +3124,7 @@ int input_read_parameters_species(struct file_content * pfc,
           }
         }
         if(i ==  gdm_a_today_interval_idx){
-          t = (log10a_today - pba->gdm_log10a_vals[i])/h;
+          t = (log10a_today - pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super])/h;
           r = 1-t;
           // only calculate the intergral over interval to add interval
           int_w_alpha_to_today=h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0-(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
@@ -3132,10 +3138,12 @@ int input_read_parameters_species(struct file_content * pfc,
       // Calculate Omega0_gdm = rho_gdm_0/ H0^2
       // Where rho_gdm_0= rho_alpha * (z_alpha+1)^-3 exp(-3(int w frop lna_alpha to lna_today ))
       // we must also inclucde a factor of log(10) to account for our integral uses log10a
-      int_w_alpha_to_today += pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a];
+
       pba->Omega0_gdm += pba->rho_alpha_gdm
                          *pow(1/(pba->gdm_z_alpha+1),3)
                          *exp(-3.0*log(10)*int_w_alpha_to_today)/pba->H0/pba->H0;
+      //printf("Omega_gdm=%e, rho_alpha=%e, z_alpha_fac=%e, int_fac=%e, H0=%e \n",pba->Omega0_gdm, pba->rho_alpha_gdm,pow(1/(pba->gdm_z_alpha+1),3),exp(-3.0*log(10)*int_w_alpha_to_today),pba->H0 );
+
     }
 
   // Could refactor by assuming if c_eff is provided then nap is to be included
