@@ -321,7 +321,7 @@ struct background
   //@{
 
   short   has_gdm;             /**< presence of GDM terms  */
-  short   w_spl_modulator;     /**< stores how to convert from the spline to w space (0 - spline (identity map), 1 - tanh(spl) space) */
+  short   gdm_w_spl_regulator;     /**< stores how to convert from the spline to w space (0 - spline (identity map), 1 - tanh(spl) space) */
   int     gdm_num_in_knots;    /**< the number knots of delta(log(a)) provided */
   double  *gdm_log10a_vals;    /**< an array of log10(a) values used as independent knots for w(log10(a)) */
   double  *gdm_w_array;        /**< an array of length (gdm_num_in_knots)*3 stores (w(log10(a)),w'(log10(a)),w''(log10(a)), int w dlog10 a) */
@@ -341,12 +341,12 @@ struct background
   int     gdm_last_index;         /**< keeps track of the last index used to speed up spline interpolations */
 
   double  gdm_z_alpha;         /** reference redshift for energy density */
-  double  gdm_alpha;           /** Omega_gdm/Omega_bg at z_alpha */
+  double  Omega_gdm;
   double  rho_alpha_gdm;       /** the value of rho_gdm at z_alpha */
-  double  Omega0_gdm;           /** the value of Omega_0_gdm */
+  double  Omega0_gdm;          /** the value of Omega_0_gdm */
 
   int     index_bg_gdm_rho;    /**< index for storage of energy dendisty of the Generalized dark matter fluid */
-  int     index_bg_gdm_alpha;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_f;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */
   int     index_bg_gdm_w;      /**< index for storage of the state parameter of the Generalized dark matter fluid */
   int     index_bg_gdm_dw_over_dlna;      /**< index for storage of the derivative of the equation of state parameter of the Generalized dark matter fluid */
   int     index_bg_gdm_d2w_over_dlna2;    /**< index for storage of the 2nd derivative of the equation of state parameter of the Generalized dark matter fluid */

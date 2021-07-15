@@ -578,7 +578,7 @@ int background_functions(
     double log10a=log10(a);
     // find  w, dw_dlog10a, int_w_dlog10a, rho_gdm depending on spline method
     double w, dw_dlog10a,d2w_dlog10a2, int_w_dlog10a ,rho_gdm;
-    if(pba->w_spl_modulator == 0){
+    if(pba->gdm_w_spl_regulator == 0){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
@@ -617,7 +617,7 @@ int background_functions(
                       +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
     }
-    if(pba->w_spl_modulator == 1){
+    if(pba->gdm_w_spl_regulator == 1){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_num_super_sample_knots+pba->index_gdm_log10a_super]<=log10a) {
@@ -678,7 +678,6 @@ int background_functions(
     rho_gdm = pba->rho_alpha_gdm*pow(1/(a*(1+pba->gdm_z_alpha)),3)*exp(-3*log(10)*int_w_dlog10a);
 
     pvecback[pba->index_bg_gdm_rho]   = rho_gdm;
-    pvecback[pba->index_bg_gdm_alpha] = rho_gdm/(rho_r+rho_m);
 
     pvecback[pba->index_bg_gdm_w]=w;
     pvecback[pba->index_bg_gdm_dw_over_dlna]= dw_dlog10a*log10(_E_);
@@ -697,6 +696,11 @@ int background_functions(
       that densities are all expressed in units of \f$ [3c^2/8\pi G] \f$, ie
       \f$ \rho_{class} = [8 \pi G \rho_{physical} / 3 c^2]\f$ */
 
+  /** generalized dark matter additions */
+  // Needs rho_total so delayed until here
+  if (pba->has_gdm) {
+    pvecback[pba->index_bg_gdm_f] = pvecback[pba->index_bg_gdm_rho]/rho_tot;
+  }
 
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
@@ -1016,7 +1020,7 @@ int background_free_input(
       free(pba->scf_parameters);
   }
   // Generalized Dark Matter Addtions
-  if (pba->gdm_alpha != 0.){
+  if (pba->Omega0_gdm != 0.){
     free(pba->gdm_w_array);
     free(pba->gdm_log10a_vals);
   }
@@ -1093,7 +1097,7 @@ int background_indices(
 
   /** Generalized dark matter additions */
   pba->has_gdm=_FALSE_;
-  if(pba->gdm_alpha !=0.0)
+  if(pba->Omega0_gdm !=0.0)
     pba->has_gdm = _TRUE_;
 
   /** - initialize all indices */
@@ -1175,7 +1179,7 @@ int background_indices(
   /* inxed for generalized dark matter    */
   class_define_index(pba->index_bg_gdm_rho,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_w,pba->has_gdm,index_bg,1);
-  class_define_index(pba->index_bg_gdm_alpha,pba->has_gdm,index_bg,1);
+  class_define_index(pba->index_bg_gdm_f,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_dw_over_dlna,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_d2w_over_dlna2,pba->has_gdm,index_bg,1);
 
@@ -2520,13 +2524,13 @@ int background_output_titles(
   class_store_columntitle(titles,"gr.fac. f",_TRUE_);
 
   // Generalize dark matter additions
-  if(pba->has_gdm) {
+  if(pba->has_gdm){
     class_store_columntitle(titles,"(.)rho_gdm",_TRUE_);
-    class_store_columntitle(titles,"alpha_gdm",_TRUE_);
-    class_store_columntitle(titles,"(.)rho_gdm_ff",_TRUE_;
-    class_store_columntitle(titles,"(.)rho_gdm_r",_TRUE_;
-    class_store_columntitle(titles,"(.)rho_gdm_d",_TRUE_;
-    class_store_columntitle(titles,"(.)rho_gdm_lamda",_TRUE_;
+    class_store_columntitle(titles,"f_gdm",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_ff",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_r",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_d",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_lamda",_TRUE_);
     class_store_columntitle(titles,"w_gdm",_TRUE_);
     class_store_columntitle(titles,"dw_gdm/dlna",_TRUE_);
     class_store_columntitle(titles,"int_w_dlna",_TRUE_);
@@ -2608,10 +2612,10 @@ int background_output_data(
     if (pba->has_gdm) {
       double rho_gdm = pvecback[pba->index_bg_gdm_rho];
       double w = pvecback[pba->index_bg_gdm_w];
-      double dw_over_dlna = pvecback[pba->index_bg_gdm_dw_over_dlna]
-      double d2w_over_dlna2 = pvecback[pba->index_bg_gdm_d2w_over_dlna2]
+      double dw_over_dlna = pvecback[pba->index_bg_gdm_dw_over_dlna];
+      double d2w_over_dlna2 = pvecback[pba->index_bg_gdm_d2w_over_dlna2];
       class_store_double(dataptr,rho_gdm,_TRUE_,storeidx);
-      class_store_double(dataptr,pvecback[pba->index_bg_gdm_alpha],_TRUE_,storeidx);
+      class_store_double(dataptr,pvecback[pba->index_bg_gdm_f],_TRUE_,storeidx);
       class_store_double(dataptr,rho_gdm*(d2w_over_dlna2-2.*dw_over_dlna+3.*w*(-1.-3.*dw_over_dlna+2.*w+3.*w*w))/12.,_TRUE_,storeidx);
       class_store_double(dataptr,-3.*rho_gdm*(d2w_over_dlna2+9.*w*(-1.-dw_over_dlna+w*w))/8.,_TRUE_,storeidx);
       class_store_double(dataptr,rho_gdm*(1+(d2w_over_dlna2+dw_over_dlna)/3.+w*(-3.-3*dw_over_dlna-w+3.*w*w)),_TRUE_,storeidx);
