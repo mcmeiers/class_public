@@ -3037,6 +3037,7 @@ int input_read_parameters_species(struct file_content * pfc,
             gdm_super_sample_idx++;
           }
       }
+      free(gdm_super_sample_knot_group_size);
       // Store last point
       class_test((pointer1[pba->gdm_num_in_knots-1]<-1)||(pointer1[pba->gdm_num_in_knots-1]>1),errmsg,"Generalized dark matter w value indexed %d read as %g and breaks |w|<1 assumption. Check your .ini file.",pba->gdm_num_in_knots-1,pointer1[pba->gdm_num_in_knots-1]);
       // If not already found a_alpha and a_today must lie in the last interval as we have already checked that they lie in the full range.

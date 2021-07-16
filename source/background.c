@@ -620,15 +620,15 @@ int background_functions(
     if(pba->gdm_w_spl_regulator == 1){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
-      if(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_num_super_sample_knots+pba->index_gdm_log10a_super]<=log10a) {
-        while(pba->gdm_w_array[(pba->gdm_last_index+1)*pba->gdm_num_super_sample_knots+pba->index_gdm_log10a_super]<log10a){
+      if(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]<=log10a) {
+        while(pba->gdm_w_array[(pba->gdm_last_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]<log10a){
           pba->gdm_last_index++;
         }
       }
 
       else{
         pba->gdm_last_index--;
-        while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
+        while(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]>log10a){
         pba->gdm_last_index--;
         }
       }
