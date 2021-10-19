@@ -3062,6 +3062,9 @@ int perturbations_solve(
       generic_evolver = evolver_ndf15;
     }
 
+    class_test(isnan(ppw->pv->y[0]),
+               ppt->error_message,
+               "Preventing Segfault nan found in perturbations");
     class_call(generic_evolver(perturbations_derivs,
                                interval_limit[index_interval],
                                interval_limit[index_interval+1],

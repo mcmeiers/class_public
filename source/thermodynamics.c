@@ -1498,7 +1498,7 @@ int thermodynamics_solve(
 
     /** --> (c2) otherwise, just integrate quantities over the current interval. */
     else{
-
+      class_test(isnan(ptw->ptdw->ptv->y[0]),pth->error_message, "Preventing Segfault nan found in thermodynamics");
       class_call(generic_evolver(thermodynamics_derivs,
                                  interval_limit[index_interval],
                                  interval_limit[index_interval+1],

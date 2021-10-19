@@ -686,8 +686,8 @@ int background_functions(
     rho_tot += rho_gdm;
     p_tot += w*rho_gdm;
     dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
-    rho_r += -3.*rho_gdm*(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+9.*w*(-1.-pvecback[pba->index_bg_gdm_dw_over_dlna]+w*w))/8;
-    rho_m += rho_gdm*(1+(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+pvecback[pba->index_bg_gdm_dw_over_dlna])/3.+w*(-3.-3*pvecback[pba->index_bg_gdm_dw_over_dlna]-w+3.*w*w));
+    //rho_r += -3.*rho_gdm*(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+9.*w*(-1.-pvecback[pba->index_bg_gdm_dw_over_dlna]+w*w))/8;
+    //rho_m += rho_gdm*(1+(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+pvecback[pba->index_bg_gdm_dw_over_dlna])/3.+w*(-3.-3*pvecback[pba->index_bg_gdm_dw_over_dlna]-w+3.*w*w));
 
  }
 
