@@ -2793,7 +2793,7 @@ int input_read_parameters_species(struct file_content * pfc,
     class_test(flag1!=flag2,errmsg,"w vals not provided for Generalized dark matter. Check your .ini file.");
 
     // Test to ensure we have the same number of log(a) and delta values
-    class_test(pba->gdm_num_in_knots != n,errmsg,"Number of generalized dark matter independent and dependant values are missmatched. Found %d independent and %d dependant.  Check your .ini file.",pba->gdm_num_in_knots,n);
+    class_test(pba->gdm_num_in_knots != n,errmsg,"Number of generalized dark matter independent and dependant values are mismatched. Found %d independent and %d dependant.  Check your .ini file.",pba->gdm_num_in_knots,n);
     // Read what redshift the energy density calibrator alpha is given.
     pba->gdm_z_alpha = 0.0;
     class_call(parser_read_double(pfc,"gdm_z_alpha",&(pba->gdm_z_alpha),&flag1,errmsg),
@@ -2809,20 +2809,34 @@ int input_read_parameters_species(struct file_content * pfc,
 
     class_test(pba->gdm_z_alpha !=0.0 && flag2==_TRUE_,errmsg,"Generalized dark matter only accommodates z_alpha with gdm_alpha and not with Omega_gdm. Check your .ini file.");
 
-    class_call(parser_read_string(pfc,"gdm_spline_regulator",&string1,&flag1,errmsg),errmsg,errmsg);
+    int gdm_order;
+    class_call(parser_read_int(pfc,"gdm_interpolation_order",&gdm_order,&flag1,errmsg),
+               errmsg,
+               errmsg);
+    // Assumes cubic unless specified
+    pba->gdm_w_interpolation_method = gdm_cubic;
 
-    pba->gdm_w_spl_regulator = 0;
-
-    if(flag1==_TRUE_ && strstr(string1,"tanh") != NULL){
-      pba->gdm_w_spl_regulator = 1;
+    if(flag1 == _TRUE_){
+        switch(gdm_order){
+            case 1: pba->gdm_w_interpolation_method = gdm_linear; break;
+            case 3: pba->gdm_w_interpolation_method = gdm_cubic; break;
+            default: class_test(_FALSE_,errmsg,"Interpolation order not supported, must be 1 or 3"); break;
+        }
     }
 
+    // Add archtanh regulator
+    if(pba->gdm_w_interpolation_method== gdm_cubic){
+        class_call(parser_read_string(pfc,"gdm_spline_regulator",&string1,&flag1,errmsg),errmsg,errmsg);
+        if(flag1==_TRUE_ && strstr(string1,"tanh") != NULL){
+            pba->gdm_w_interpolation_method = gdm_cubic_arctanh;
+        }
+    }
     //Test that log(a) values contain today, and z_alpha and a_ini
     int gdm_ref_interval_idx=0;
     int gdm_a_today_interval_idx=0;
     double log10a_alpha=-1.0*log10(pba->gdm_z_alpha+1.0);
     double log10a_today= 0.0;
-    class_test(pba->gdm_log10a_vals[0]>log10(ppr->a_ini_over_a_today_default),errmsg,"Generalized dark matter log10a range does not include a_ini. Check your .ini or .pre file.");
+    class_test(pba->gdm_log10a_vals[0]>log10(ppr->a_ini_over_a_today_default),errmsg,"Generalized dark matter log10a range does not include a_ini. Check your .ini file.");
     class_test((log10a_alpha>log10a_today)|(log10a_alpha<log10(ppr->a_ini_over_a_today_default)),errmsg,"Generalized dark matter z_alpha not contained in a_ini to a_today. Check your .ini file.");
     class_test(pba->gdm_log10a_vals[pba->gdm_num_in_knots-1]<log10a_today,errmsg,"Generalized dark matter log10a range does not include a_today. Check your .ini file.");
 
@@ -2830,8 +2844,56 @@ int input_read_parameters_species(struct file_content * pfc,
     // Stores the integral from a_alpha to a_today for setting Omega0_gdm
     double int_w_alpha_to_today;
 
+    if(pba->gdm_w_interpolation_method == gdm_linear){
+          // Allocate the spline table and set indices
+          pba->index_gdm_w = 0;
+          pba->index_gdm_dw_by_dlog10a = 1;
+          pba->index_gdm_int_w_dlog10a = 2;
+          pba->gdm_w_array_num_cols = 3 ;
+          class_alloc(pba->gdm_w_array,pba->gdm_w_array_num_cols*pba->gdm_num_in_knots*sizeof(double),errmsg);
 
-    if(pba->gdm_w_spl_regulator == 0){
+          // Store w values in the spline array and ensure parameters are between -1 and 1
+
+          for (size_t i = 0; i < pba->gdm_num_in_knots; i++) {
+              pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]=pointer1[i];
+              class_test((pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]<-1)||(pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]>1),errmsg,"Generalized dark matter w value indexed %d read as %g and breaks |w|<1 assumption. Check your .ini file.",i,pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]);
+          }
+          // Free the storage of w values now that they've been stored in spline array
+          free(pointer1);
+
+          // Find interval containing a_today and the information on rho_gdm is specified
+          for (size_t i = 1; i < pba->gdm_num_in_knots; i++) {
+              if(pba->gdm_log10a_vals[i]<=log10a_alpha) gdm_ref_interval_idx++;
+              if(pba->gdm_log10a_vals[i]<=log10a_today) gdm_a_today_interval_idx++;
+              class_test(pba->gdm_log10a_vals[i-1]>=pba->gdm_log10a_vals[i],pba->error_message,"Generalized dark matter anchors indexed %d and %d are out of cronological order, anchors should be increasing values of Log(a). Check your .ini file.",i-1,i);
+          }
+
+          pba->gdm_w_array[0*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]=0;
+          // Initialize calculate derivatives and integrals
+          for (size_t i = 0; i < pba->gdm_num_in_knots-1; i++) {
+              double Delta_log10a = pba->gdm_log10a_vals[i+1] - pba->gdm_log10a_vals[i];
+              double Delta_w = pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w] - pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+              pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a] = Delta_w/Delta_log10a;
+              pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] =  pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_w*Delta_log10a/2.0;
+          }
+          // Last point continues previous derivative
+          pba->gdm_w_array[(pba->gdm_num_in_knots-1)*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a] = pba->gdm_w_array[(pba->gdm_num_in_knots-2)*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
+
+          // Shift integrals for where rho_gdm information is provided
+          // Integrate out from log10a_alpha to gdm_log10a_vals[i]
+          // Store value of integral from log10a_alpha
+
+          for (size_t i = 0; i < pba->gdm_num_in_knots; i++){
+              double Delta_log10a = (log10a_alpha-pba->gdm_log10a_vals[gdm_ref_interval_idx]);
+              double Delta_w = Delta_log10a * pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
+              double gdm_w = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+              double gdm_ref_integral = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a * (gdm_w+Delta_w/2.0);
+              pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] -=  gdm_ref_integral;
+          }
+
+      }
+
+    if(pba->gdm_w_interpolation_method == gdm_cubic){
       // Allocate the spline table and set indices
       pba->index_gdm_w = 0;
       pba->index_gdm_d2w_by_dlog10a2 = 1;
@@ -2976,7 +3038,7 @@ int input_read_parameters_species(struct file_content * pfc,
       }
     }
 
-    if(pba->gdm_w_spl_regulator == 1){
+    if(pba->gdm_w_interpolation_method == gdm_cubic_arctanh){
       double gdm_max_spl_Delta_log10a = 0.1;
       class_call(parser_read_double(pfc,"gdm_max_spl_delta_log10a",&gdm_max_spl_Delta_log10a,&flag1,errmsg),
                  errmsg ,

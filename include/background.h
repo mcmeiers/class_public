@@ -28,6 +28,13 @@ enum vecback_format {short_info, normal_info, long_info};
 
 enum interpolation_method {inter_normal, inter_closeby};
 
+/** GDM additons
+    list of interpolation methods for gdm:  */
+
+enum gdm_interpolation_method {gdm_linear, gdm_cubic, gdm_cubic_arctanh};
+
+/** end of additions */
+
 /**
  * background structure containing all the background information that
  * other modules need to know.
@@ -321,7 +328,7 @@ struct background
   //@{
 
   short   has_gdm;             /**< presence of GDM terms  */
-  short   gdm_w_spl_regulator;     /**< stores how to convert from the spline to w space (0 - spline (identity map), 1 - tanh(spl) space) */
+  short   gdm_w_interpolation_method;     /**< stores how to convert from the spline to w space (0 - spline (identity map), 1 - tanh(spl) space) */
   int     gdm_num_in_knots;    /**< the number knots of delta(log(a)) provided */
   double  *gdm_log10a_vals;    /**< an array of log10(a) values used as independent knots for w(log10(a)) */
   double  *gdm_w_array;        /**< an array of length (gdm_num_in_knots)*3 stores (w(log10(a)),w'(log10(a)),w''(log10(a)), int w dlog10 a) */
@@ -330,7 +337,7 @@ struct background
   int     index_gdm_log10a_super;          /**< the index where the super sampled log10a values for the spline are stored */
   int     index_gdm_atanh_w;               /**< the index where atanh(w(ln(a))) is stored in the gdm atanh array*/
   int     index_gdm_d2atanh_w_by_dlog10a2; /**< the index where atanh(w''(log10(a))) is stored in the gdm atanh array  */
-  int     ind_gdm_dw_by_dlog10a;           /**< the index where w'(log10(a)) is stored will be used for the spline  */
+  int     index_gdm_dw_by_dlog10a;           /**< the index where w'(log10(a)) is stored will be used for the spline  */
   int     gdm_num_super_sample_knots;      /**< the numer of knowts for the super sampled splined used for tanh spline */
 
   int     index_gdm_w;               /**< the index where w(ln(a)) is stored in the gdm array*/

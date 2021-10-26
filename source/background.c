@@ -578,7 +578,33 @@ int background_functions(
     double log10a=log10(a);
     // find  w, dw_dlog10a, int_w_dlog10a, rho_gdm depending on spline method
     double w, dw_dlog10a,d2w_dlog10a2, int_w_dlog10a ,rho_gdm;
-    if(pba->gdm_w_spl_regulator == 0){
+    if(pba->gdm_w_interpolation_method == gdm_linear){
+        // Find interval that log10(a) lies in
+        int gdm_interval_index;
+        if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
+            if (pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
+                pba->gdm_last_index++;
+                while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
+                    pba->gdm_last_index++;
+                }
+            }
+        }
+        else{
+            pba->gdm_last_index--;
+            while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
+                pba->gdm_last_index--;
+            }
+        }
+        gdm_interval_index=pba->gdm_last_index;
+
+        double Delta_log10a = log10a-pba->gdm_log10a_vals[gdm_interval_index];
+        dw_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
+        w = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w] + dw_dlog10a*Delta_log10a;
+        int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + (Delta_log10a)*(w-dw_dlog10a/2);
+        d2w_dlog10a2= 0;
+
+    }
+    if(pba->gdm_w_interpolation_method == gdm_cubic){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
@@ -617,7 +643,7 @@ int background_functions(
                       +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
     }
-    if(pba->gdm_w_spl_regulator == 1){
+    if(pba->gdm_w_interpolation_method == gdm_cubic_arctanh){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]<=log10a) {
