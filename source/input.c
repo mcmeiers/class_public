@@ -2873,8 +2873,9 @@ int input_read_parameters_species(struct file_content * pfc,
           for (size_t i = 0; i < pba->gdm_num_in_knots-1; i++) {
               double Delta_log10a = pba->gdm_log10a_vals[i+1] - pba->gdm_log10a_vals[i];
               double Delta_w = pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w] - pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+              double w_i = pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w];
               pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a] = Delta_w/Delta_log10a;
-              pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] =  pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_w*Delta_log10a/2.0;
+              pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] =  pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a*(w_i+Delta_w/2.0);
           }
           // Last point continues previous derivative
           pba->gdm_w_array[(pba->gdm_num_in_knots-1)*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a] = pba->gdm_w_array[(pba->gdm_num_in_knots-2)*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
@@ -2882,14 +2883,17 @@ int input_read_parameters_species(struct file_content * pfc,
           // Shift integrals for where rho_gdm information is provided
           // Integrate out from log10a_alpha to gdm_log10a_vals[i]
           // Store value of integral from log10a_alpha
-
-          for (size_t i = 0; i < pba->gdm_num_in_knots; i++){
-              double Delta_log10a = (log10a_alpha-pba->gdm_log10a_vals[gdm_ref_interval_idx]);
-              double Delta_w = Delta_log10a * pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
-              double gdm_w = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
-              double gdm_ref_integral = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a * (gdm_w+Delta_w/2.0);
-              pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] -=  gdm_ref_integral;
+          {
+              double Delta_log10a_ref = (log10a_alpha-pba->gdm_log10a_vals[gdm_ref_interval_idx]);
+              double Delta_w_ref = Delta_log10a_ref * pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
+              double gdm_w_ref = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+              double gdm_integral_ref = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
+                      + Delta_log10a_ref * (gdm_w_ref+Delta_w_ref/2.0);
+              for (size_t i = 0; i < pba->gdm_num_in_knots; i++){
+                  pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] -=  gdm_integral_ref;
+              }
           }
+
 
       }
 
@@ -3210,6 +3214,7 @@ int input_read_parameters_species(struct file_content * pfc,
       pba->Omega0_gdm = pba->rho_alpha_gdm
                         *pow(1/(pba->gdm_z_alpha+1),3)
                         *exp(-3.0*log(10)*int_w_alpha_to_today)/pba->H0/pba->H0;
+      printf("%e\n",int_w_alpha_to_today);
     }
     else{
       pba->rho_alpha_gdm = pba->Omega0_gdm*pba->H0*pba->H0;
