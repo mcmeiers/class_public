@@ -2824,7 +2824,7 @@ int input_read_parameters_species(struct file_content * pfc,
         }
     }
 
-    // Add archtanh regulator
+
     if(pba->gdm_w_interpolation_method== gdm_cubic){
         class_call(parser_read_string(pfc,"gdm_spline_regulator",&string1,&flag1,errmsg),errmsg,errmsg);
         if(flag1==_TRUE_ && strstr(string1,"tanh") != NULL){
@@ -2865,11 +2865,11 @@ int input_read_parameters_species(struct file_content * pfc,
           for (size_t i = 1; i < pba->gdm_num_in_knots; i++) {
               if(pba->gdm_log10a_vals[i]<=log10a_alpha) gdm_ref_interval_idx++;
               if(pba->gdm_log10a_vals[i]<=log10a_today) gdm_a_today_interval_idx++;
-              class_test(pba->gdm_log10a_vals[i-1]>=pba->gdm_log10a_vals[i],pba->error_message,"Generalized dark matter anchors indexed %d and %d are out of cronological order, anchors should be increasing values of Log(a). Check your .ini file.",i-1,i);
+              class_test(pba->gdm_log10a_vals[i-1]>=pba->gdm_log10a_vals[i],pba->error_message,"Generalized dark matter anchors indexed %d and %d are out of chronological order, anchors should be increasing values of Log(a). Check your .ini file.",i-1,i);
           }
 
           pba->gdm_w_array[0*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]=0;
-          // Initialize calculate derivatives and integrals
+          // Initialize derivatives and integrals
           for (size_t i = 0; i < pba->gdm_num_in_knots-1; i++) {
               double Delta_log10a = pba->gdm_log10a_vals[i+1] - pba->gdm_log10a_vals[i];
               double Delta_w = pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w] - pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w];
@@ -2887,11 +2887,17 @@ int input_read_parameters_species(struct file_content * pfc,
               double Delta_log10a_ref = (log10a_alpha-pba->gdm_log10a_vals[gdm_ref_interval_idx]);
               double Delta_w_ref = Delta_log10a_ref * pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
               double gdm_w_ref = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
-              double gdm_integral_ref = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
-                      + Delta_log10a_ref * (gdm_w_ref+Delta_w_ref/2.0);
+              double gdm_integral_ref = pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a_ref * (gdm_w_ref+Delta_w_ref/2.0);
               for (size_t i = 0; i < pba->gdm_num_in_knots; i++){
                   pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] -=  gdm_integral_ref;
               }
+          }
+          // Calculate the integral of w from the
+          if(pba->Omega0_gdm==0){
+              double Delta_log10a_ref = (log10a_alpha-pba->gdm_log10a_vals[gdm_a_today_interval_idx]);
+              double Delta_w_ref = Delta_log10a_ref * pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
+              double gdm_w_ref = pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+              int_w_alpha_to_today = pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a_ref * (gdm_w_ref+Delta_w_ref/2.0);
           }
 
 
@@ -3200,10 +3206,10 @@ int input_read_parameters_species(struct file_content * pfc,
                                   &flag1,
                                   errmsg),
                errmsg,errmsg);
-    class_test(!flag1^(pba->Omega0_gdm!=0),errmsg,"Generalized dark matter requires gdm_alpha where alpha=rho_gdm/rho_bg at z=z_apha or omega_gdm exclusively. Check your .ini file.");
+    class_test(!flag1^(pba->Omega0_gdm!=0),errmsg,"Generalized dark matter exclusively requires omega_gdm or gdm_alpha where alpha=rho_gdm/rho_bg at z=z_apha. Check your .ini file.");
     // Calculate Omega0_gdm = rho_gdm_0/ H0^2
     // Where rho_gdm_0= rho_alpha * (z_alpha+1)^-3 exp(-3(int w frop lna_alpha to lna_today ))
-    // we must also inclucde a factor of log(10) to account for our integral uses log10a
+    // we must also include a factor of log(10) to account for our integral uses log10a
     if(flag1==_TRUE_){
       // Calculate rho_gdm(z_alpha)
       pba->rho_alpha_gdm = param1
@@ -3214,7 +3220,6 @@ int input_read_parameters_species(struct file_content * pfc,
       pba->Omega0_gdm = pba->rho_alpha_gdm
                         *pow(1/(pba->gdm_z_alpha+1),3)
                         *exp(-3.0*log(10)*int_w_alpha_to_today)/pba->H0/pba->H0;
-      printf("%e\n",int_w_alpha_to_today);
     }
     else{
       pba->rho_alpha_gdm = pba->Omega0_gdm*pba->H0*pba->H0;
