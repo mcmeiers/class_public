@@ -582,41 +582,35 @@ int background_functions(
         // Find interval that log10(a) lies in
         int gdm_interval_index;
         if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
-            if (pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
-                pba->gdm_last_index++;
-                while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
+            while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
                     pba->gdm_last_index++;
-                }
             }
         }
         else{
-            pba->gdm_last_index--;
             while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
                 pba->gdm_last_index--;
             }
         }
         gdm_interval_index=pba->gdm_last_index;
 
-        double Delta_log10a = log10a-pba->gdm_log10a_vals[gdm_interval_index];
+        double Delta_log10a = log10a- pba->gdm_log10a_vals[gdm_interval_index];
         dw_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
         w = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w] + dw_dlog10a*Delta_log10a;
-        int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + (Delta_log10a)*(w-dw_dlog10a/2);
+        int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + (Delta_log10a)*(w-dw_dlog10a/2.0);
         d2w_dlog10a2= 0;
-
+        if(Delta_log10a<0.1) printf("log10a=%e,Delta_log10a=%e,Dw/dloga=%e,Delta_int=%e\n",log10a,Delta_log10a,dw_dlog10a,(Delta_log10a)*(w-dw_dlog10a/2.0));
     }
     if(pba->gdm_w_interpolation_method == gdm_cubic){
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
-        if (pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
-          pba->gdm_last_index++;
+        if (pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
           while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
           pba->gdm_last_index++;
           }
         }
       }
       else{
-        pba->gdm_last_index--;
         while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
         pba->gdm_last_index--;
         }
@@ -647,13 +641,12 @@ int background_functions(
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]<=log10a) {
-        while(pba->gdm_w_array[(pba->gdm_last_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]<log10a){
+        while(pba->gdm_w_array[(pba->gdm_last_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]<=log10a){
           pba->gdm_last_index++;
         }
       }
 
       else{
-        pba->gdm_last_index--;
         while(pba->gdm_w_array[pba->gdm_last_index*pba->gdm_w_array_num_cols+pba->index_gdm_log10a_super]>log10a){
         pba->gdm_last_index--;
         }

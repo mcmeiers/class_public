@@ -2894,10 +2894,10 @@ int input_read_parameters_species(struct file_content * pfc,
           }
           // Calculate the integral of w from the
           if(pba->Omega0_gdm==0){
-              double Delta_log10a_ref = (log10a_alpha-pba->gdm_log10a_vals[gdm_a_today_interval_idx]);
-              double Delta_w_ref = Delta_log10a_ref * pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
-              double gdm_w_ref = pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
-              int_w_alpha_to_today = pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a_ref * (gdm_w_ref+Delta_w_ref/2.0);
+              double Delta_log10a = log10a_alpha-pba->gdm_log10a_vals[gdm_a_today_interval_idx];
+              double Delta_w = Delta_log10a * pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
+              double w_i = pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+              int_w_alpha_to_today = pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + Delta_log10a * (w_i+Delta_w/2.0);
           }
 
 
