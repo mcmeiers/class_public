@@ -593,12 +593,12 @@ int background_functions(
         }
         gdm_interval_index=pba->gdm_last_index;
 
-        double Delta_log10a = log10a- pba->gdm_log10a_vals[gdm_interval_index];
+        double Delta_log10a = log10a - pba->gdm_log10a_vals[gdm_interval_index];
         dw_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
-        w = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w] + dw_dlog10a*Delta_log10a;
-        int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + (Delta_log10a)*(w-dw_dlog10a/2.0);
+        double w_i = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w];
+        w = w_i + dw_dlog10a*Delta_log10a;
+        int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + (Delta_log10a)*(w_i+dw_dlog10a*Delta_log10a/2.0);
         d2w_dlog10a2= 0;
-        if(Delta_log10a<0.1) printf("log10a=%e,Delta_log10a=%e,Dw/dloga=%e,Delta_int=%e\n",log10a,Delta_log10a,dw_dlog10a,(Delta_log10a)*(w-dw_dlog10a/2.0));
     }
     if(pba->gdm_w_interpolation_method == gdm_cubic){
       // Find interval that log10(a) lies in
@@ -695,7 +695,6 @@ int background_functions(
                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
     }
     rho_gdm = pba->rho_alpha_gdm*pow(1/(a*(1+pba->gdm_z_alpha)),3)*exp(-3*log(10)*int_w_dlog10a);
-
     pvecback[pba->index_bg_gdm_rho]   = rho_gdm;
 
     pvecback[pba->index_bg_gdm_w]=w;
@@ -704,7 +703,7 @@ int background_functions(
 
     rho_tot += rho_gdm;
     p_tot += w*rho_gdm;
-    dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
+    //dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
     //rho_r += -3.*rho_gdm*(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+9.*w*(-1.-pvecback[pba->index_bg_gdm_dw_over_dlna]+w*w))/8;
     //rho_m += rho_gdm*(1+(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+pvecback[pba->index_bg_gdm_dw_over_dlna])/3.+w*(-3.-3*pvecback[pba->index_bg_gdm_dw_over_dlna]-w+3.*w*w));
 

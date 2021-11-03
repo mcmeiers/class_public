@@ -2882,7 +2882,7 @@ int input_read_parameters_species(struct file_content * pfc,
 
           // Shift integrals for where rho_gdm information is provided
           // Integrate out from log10a_alpha to gdm_log10a_vals[i]
-          // Store value of integral from log10a_alpha
+          // Shift stored integrals so the new lower bound is log10a_alpha
           {
               double Delta_log10a_ref = (log10a_alpha-pba->gdm_log10a_vals[gdm_ref_interval_idx]);
               double Delta_w_ref = Delta_log10a_ref * pba->gdm_w_array[gdm_ref_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
@@ -3165,7 +3165,7 @@ int input_read_parameters_species(struct file_content * pfc,
                                       -pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_atanh_w]
                                       +1/6.0*(pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]
                                               +2*pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2atanh_w_by_dlog10a2]),2)); // w''(t) on right boundary
-        // Integrate over the interval recored the accumulated integral from inital
+        // Integrate over the interval recorded the accumulated integral from initial
         pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
           =pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
             + h*(12*(w1+w2)-(ddw1+ddw2))/24.0;
