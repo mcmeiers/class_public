@@ -695,7 +695,7 @@ int background_functions(
                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
     }
     rho_gdm = pba->rho_alpha_gdm*pow(1/(a*(1+pba->gdm_z_alpha)),3)*exp(-3*log(10)*int_w_dlog10a);
-    pvecback[pba->index_bg_gdm_rho]   = rho_gdm;
+    pvecback[pba->index_bg_gdm_rho] = rho_gdm;
 
     pvecback[pba->index_bg_gdm_w]=w;
     pvecback[pba->index_bg_gdm_dw_over_dlna]= dw_dlog10a*log10(_E_);
@@ -2366,10 +2366,24 @@ int background_initial_conditions(
 
   /* Just checking that our initial time indeed is deep enough in the radiation
      dominated regime */
-  class_test(fabs(pvecback[pba->index_bg_Omega_r]-1.) > ppr->tol_initial_Omega_r,
-             pba->error_message,
-             "Omega_r = %e, not close enough to 1. Decrease a_ini_over_a_today_default in order to start from radiation domination.",
-             pvecback[pba->index_bg_Omega_r]);
+  if(pba->has_gdm == _FALSE_){
+      class_test(fabs(pvecback[pba->index_bg_Omega_r]-1.) > ppr->tol_initial_Omega_r,
+                 pba->error_message,
+                 "Omega_r = %e, not close enough to 1. Decrease a_ini_over_a_today_default in order to start from radiation domination.",
+                 pvecback[pba->index_bg_Omega_r]);
+  }
+  else{
+      double w = pvecback[pba->index_bg_gdm_w];
+      double dw = pvecback[pba->index_bg_gdm_dw_over_dlna];
+      double rho_gdm = pvecback[pba->index_bg_gdm_rho];
+      double rho_gdm_r = 3*rho_gdm*(-2*dw + 3*w + 3*w*w)/4.0;
+      double Omega_gdm_r = rho_gdm_r/(pvecback[pba->index_bg_rho_tot]-pba->K/a/a);
+      class_test(fabs(pvecback[pba->index_bg_Omega_r]+Omega_gdm_r-1.) > ppr->tol_initial_Omega_r,
+                 pba->error_message,
+                 "Omega_r = %e + Omega_gdm_r = %e  not close enough to 1. Decrease a_ini_over_a_today_default in order to start from radiation domination.",
+                 pvecback[pba->index_bg_Omega_r],Omega_gdm_r);
+  }
+
 
   /** - compute initial proper time, assuming radiation-dominated
       universe since Big Bang and therefore \f$ t=1/(2H) \f$ (good
