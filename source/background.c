@@ -582,8 +582,8 @@ int background_functions(
         // Find interval that log10(a) lies in
         int gdm_interval_index;
         if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
-            while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
-                    pba->gdm_last_index++;
+            while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
+                                  pba->gdm_last_index++;
             }
         }
         else{
@@ -604,10 +604,8 @@ int background_functions(
       // Find interval that log10(a) lies in
       int gdm_interval_index;
       if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
-        if (pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
-          while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<=log10a){
-          pba->gdm_last_index++;
-          }
+          while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
+            pba->gdm_last_index++;
         }
       }
       else{
@@ -2663,7 +2661,7 @@ int background_output_titles(
   // Generalize dark matter additions
   if(pba->has_gdm){
     class_store_columntitle(titles,"(.)rho_gdm",_TRUE_);
-    class_store_columntitle(titles,"f_gdm",_TRUE_);
+    //class_store_columntitle(titles,"f_gdm",_TRUE_);
     class_store_columntitle(titles,"w_gdm",_TRUE_);
     // class_store_columntitle(titles,"(.)rho_gdm_ff",_TRUE_);
     // class_store_columntitle(titles,"(.)rho_gdm_r",_TRUE_);
