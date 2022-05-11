@@ -2118,6 +2118,10 @@ int background_solve(
   }
 
   /** - perform the integration */
+  // Generalized dark matter addtion, protection against segfault
+  class_test(isnan(pvecback_integration[0]),
+               pba->error_message,
+               "Preventing Segfault nan found in background");
   class_call(generic_evolver(background_derivs,
                              loga_ini,
                              loga_final,
