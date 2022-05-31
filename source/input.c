@@ -1715,9 +1715,9 @@ int input_read_parameters_general(struct file_content * pfc,
   int flag1,flag2;
   double param1,param2;
   char string1[_ARGUMENT_LENGTH_MAX_];
-  char * options_output[33] =  {"tCl","pCl","lCl","nCl","dCl","sCl","mPk","mTk","dTk","vTk","sd",
+  char * options_output[34] =  {"tCl","pCl","lCl","nCl","dCl","sCl","mPk","mTk","dTk","vTk","sd",
                                 "TCl","PCl","LCl","NCl","DCl","SCl","MPk","MTk","DTk","VTk","Sd",
-                                "TCL","PCL","LCL","NCL","DCL","SCL","MPK","MTK","DTK","VTK","SD"};
+                                "TCL","PCL","LCL","NCL","DCL","SCL","MPK","MTK","DTK","VTK","SD","none"};
   char * options_temp_contributions[10] = {"tsw","eisw","lisw","dop","pol","TSW","EISW","LISW","Dop","Pol"};
   char * options_number_count[8] = {"density","dens","rsd","RSD","lensing","lens","gr","GR"};
   char * options_modes[6] = {"s","v","t","S","V","T"};
@@ -1793,11 +1793,11 @@ int input_read_parameters_general(struct file_content * pfc,
     }
 
     /* Test */
-    class_call(parser_check_options(string1, options_output, 33, &flag1),
+    class_call(parser_check_options(string1, options_output, 34, &flag1),
                errmsg,
                errmsg);
     class_test(flag1==_FALSE_,
-               errmsg, "The options for output are {'tCl','pCl','lCl','nCl','dCl','sCl','mPk','mTk','dTk','vTk','Sd'}, you entered '%s'",string1);
+               errmsg, "The options for output are {'tCl','pCl','lCl','nCl','dCl','sCl','mPk','mTk','dTk','vTk','Sd',none}, you entered '%s'",string1);
 
 
   /** 1.a) Terms contributing to the temperature spectrum */
@@ -3683,6 +3683,7 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_lambda= 1. - pba->Omega0_k - Omega_tot;
     if (input_verbose > 0){
       printf(" -> matched budget equations by adjusting Omega_Lambda = %g\n",pba->Omega0_lambda);
+      class_test(isnan(pba->Omega0_lambda),errmsg,"Preventing Segfault nan found in input");
     }
   }
   else if (flag2 == _FALSE_) {
