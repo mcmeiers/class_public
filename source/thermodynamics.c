@@ -1719,7 +1719,7 @@ int thermodynamics_calculate_remaining_quantities(
   class_call(thermodynamics_calculate_recombination_quantities(ppr,pba,pth,pvecback),
              pth->error_message,
              pth->error_message);
-
+  // continue from therefollowing is nan pth->thermodynamics_table[(index_tau+1)*pth->th_size+pth->index_th_g] 
   class_call(thermodynamics_calculate_drag_quantities(ppr,pba,pth,pvecback),
              pth->error_message,
              pth->error_message);
