@@ -109,7 +109,7 @@ double rec_helium_dxHeIIdlna(HYREC_DATA *data, double z, double xH1, double xHeI
   double nH0 = data->cosmo->nH0, Tr0 = data->cosmo->T0, fHe = data->cosmo->fHe;
   double fsR = data->cosmo->fsR, meR = data->cosmo->meR;
   int *error = &data->error;
-  double Tr, nH, ainv, s, s0;
+  double Tr, nH, ainv, s, logs0;
   double xe, xHeI, y2s, y2p, ydown;
   double etacinv, g2pinc, dnuline, tau2p, pesc, tauc, enh;
   char sub_message[256];
@@ -129,12 +129,12 @@ double rec_helium_dxHeIIdlna(HYREC_DATA *data, double z, double xH1, double xHeI
   nH = nH0*ainv*ainv*ainv;
 
   /* Saha abundance ratio, and ratio for zero ionization potential */
-  s0 = fsR*fsR*fsR*meR*meR*meR *2.414194e15*Tr*sqrt(Tr)/nH * 4.;
-  s = s0 * exp(-285325./Tr);
+  logs0 = log(fsR*fsR*fsR*meR*meR*meR *2.414194e15*Tr*sqrt(Tr)/nH * 4.);
+  s = exp(logs0-285325./Tr);
 
   /* Abundances of excited levels.  y is defined as x_i = y_i * xe * xHeII */
-  y2s = exp(46090./Tr)/s0;
-  y2p = exp(39101./Tr)/s0 * 3.;
+  y2s = exp(46090./Tr-logs0);
+  y2p = exp(39101./Tr-logs0) * 3.;
 
   /* Continuum opacity */
   /* coeff is 1/(sigma lambda) in cm^(-3). Result is in s^{-1}  */
@@ -174,7 +174,6 @@ double rec_helium_dxHeIIdlna(HYREC_DATA *data, double z, double xH1, double xHeI
 
   ydown = fsR*fsR*fsR*fsR*fsR*fsR*fsR*fsR*meR *50.94*y2s  /*prefactor correcting 2-photon decay rate given alpha, me*/
         + fsR*fsR*fsR*fsR*fsR*meR* 1.7989e9*y2p*pesc;     /*prefactor correcting 1-photon dipole rate */
-
 
   return  ydown*(xHeI*s - xHeII*xe)/H;   /* Excitation is obtained by detailed balance */
 
