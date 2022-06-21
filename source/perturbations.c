@@ -5662,8 +5662,10 @@ int perturbations_initial_conditions(struct precision * ppr,
 
       // Generalized dark matter Additions TBC curvature
       if(pba->has_gdm==_TRUE_){
-        w_gdm = ppw->pvecback[pba->index_bg_gdm_w];
-        cs2_gdm = pba->gdm_c_eff2;
+        w_gdm = cs2_gdm = ppw->pvecback[pba->index_bg_gdm_w];
+        if (pba->has_nap_gdm == _TRUE_){
+          cs2_gdm = pba->gdm_c_eff2;
+        }
         cv2_gdm = pba->gdm_c_vis2;
 
         ppw->pv->y[ppw->pv->index_pt_delta_gdm]= - ktau_two/(16.-24.*w_gdm+12.*cs2_gdm)*((4.-3*cs2_gdm)*(1+w_gdm)+48.*cv2_gdm*(w_gdm-cs2_gdm)/(15.+4.*fracnu));
@@ -7285,9 +7287,11 @@ int perturbations_total_stress_energy(
     /* add your extra species here */
     // Generalized dark matter additions potential problem if used with fld we converte from anisotropic stress to shear
     if (pba->has_gdm == _TRUE_){
-      cs2_gdm = pba->gdm_c_eff2;
       w_gdm = ppw->pvecback[pba->index_bg_gdm_w];
-      ca2_gdm = w_gdm - ppw->pvecback[pba->index_bg_gdm_dw_over_dlna]/3./(1.+w_gdm);
+      ca2_gdm = cs2_gdm = w_gdm - ppw->pvecback[pba->index_bg_gdm_dw_over_dlna]/3./(1.+w_gdm);
+      if (pba->has_nap_gdm == _TRUE_){
+          cs2_gdm = pba->gdm_c_eff2;
+      }
       ppw->delta_rho += ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_delta_gdm];
       ppw->rho_plus_p_theta += (1.+w_gdm)*ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_theta_gdm];
       ppw->rho_plus_p_shear += (1.+w_gdm)*ppw->pvecback[pba->index_bg_gdm_rho]*y[ppw->pv->index_pt_shear_gdm];
@@ -9776,9 +9780,12 @@ int perturbations_derivs(double tau,
     if (pba->has_gdm == _TRUE_) {
       //Some working variable for clarity
       w_gdm=pvecback[pba->index_bg_gdm_w];
-      cs2_gdm = pba->gdm_c_eff2;
       cv2_gdm = pba->gdm_c_vis2;
-      ca2_gdm = w_gdm-pvecback[pba->index_bg_gdm_dw_over_dlna]/(1.+w_gdm)/3.;
+      // ca2, cs2 are the adiabatic and effective speed of sound respectively
+      ca2_gdm = cs2_gdm = w_gdm-pvecback[pba->index_bg_gdm_dw_over_dlna]/(1.+w_gdm)/3.;
+      if (pba->has_nap_gdm == _TRUE_){
+        cs2_gdm = pba->gdm_c_eff2;
+      }
       //delta_gdm evolution
       dy[pv->index_pt_delta_gdm] = 3.*(w_gdm-cs2_gdm)*a_prime_over_a*y[pv->index_pt_delta_gdm]
                                  -(1.+w_gdm)*(1+9.*(cs2_gdm-ca2_gdm)*a_prime_over_a*a_prime_over_a/k2)*y[pv->index_pt_theta_gdm]
