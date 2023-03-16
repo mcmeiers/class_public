@@ -3579,8 +3579,8 @@ int input_read_parameters_species(struct file_content * pfc,
       class_read_double("gdm_c_eff2",pba->gdm_c_eff2); // Reads c_eff^2 if provided, otherise defaults to c_eff^2=1/3
     }
 
-    pba->gdm_c_vis2=1.0/3.0;
-    class_read_double("gdm_c_vis2",pba->gdm_c_vis2); // Reads c_vis^2 if provided, otherise defaults to c_vis^2=1/3
+    pba->gdm_c_vis2=0;
+    class_read_double("gdm_c_vis2",pba->gdm_c_vis2); // Reads c_vis^2 if provided, otherise defaults to c_vis^2=0
 
     pba->gdm_last_index=0;  // initialize the index used for search algorithms
   }

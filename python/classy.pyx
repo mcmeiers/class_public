@@ -377,67 +377,70 @@ cdef class Class:
         # methods fail, call `struct_cleanup` and raise a CosmoComputationError
         # with the error message from the faulty module of CLASS.
         if "background" in level:
+            self.ncp.add("background")
             if background_init(&(self.pr), &(self.ba)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.ba.error_message)
-            self.ncp.add("background")
 
         if "thermodynamics" in level:
+            self.ncp.add("thermodynamics")
             if thermodynamics_init(&(self.pr), &(self.ba),
                                    &(self.th)) == _FAILURE_:
                 self.struct_cleanup()
-                raise CosmoComputationError(self.th.error_message)
-            self.ncp.add("thermodynamics")
+                raise CosmoComputationError(self.th.error_message)   
 
         if "perturb" in level:
+            self.ncp.add("perturb")
             if perturbations_init(&(self.pr), &(self.ba),
                             &(self.th), &(self.pt)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.pt.error_message)
-            self.ncp.add("perturb")
+            
 
         if "primordial" in level:
+            self.ncp.add("primordial")
             if primordial_init(&(self.pr), &(self.pt),
                                &(self.pm)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.pm.error_message)
-            self.ncp.add("primordial")
+            
 
         if "fourier" in level:
+            self.ncp.add("fourier")
             if fourier_init(&self.pr, &self.ba, &self.th,
                               &self.pt, &self.pm, &self.fo) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.fo.error_message)
-            self.ncp.add("fourier")
+            
 
         if "transfer" in level:
+            self.ncp.add("transfer")
             if transfer_init(&(self.pr), &(self.ba), &(self.th),
                              &(self.pt), &(self.fo), &(self.tr)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.tr.error_message)
-            self.ncp.add("transfer")
 
         if "harmonic" in level:
+            self.ncp.add("harmonic")
             if harmonic_init(&(self.pr), &(self.ba), &(self.pt),
                             &(self.pm), &(self.fo), &(self.tr),
                             &(self.hr)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.hr.error_message)
-            self.ncp.add("harmonic")
 
         if "lensing" in level:
+            self.ncp.add("lensing")
             if lensing_init(&(self.pr), &(self.pt), &(self.hr),
                             &(self.fo), &(self.le)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.le.error_message)
-            self.ncp.add("lensing")
 
         if "distortions" in level:
+            self.ncp.add("distortions")
             if distortions_init(&(self.pr), &(self.ba), &(self.th),
                                 &(self.pt), &(self.pm), &(self.sd)) == _FAILURE_:
                 self.struct_cleanup()
                 raise CosmoComputationError(self.sd.error_message)
-            self.ncp.add("distortions")
 
         self.computed = True
 
