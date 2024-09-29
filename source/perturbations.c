@@ -25,6 +25,7 @@
  */
 
 #include "perturbations.h"
+#include "parallel.h"
 
 
 /**
@@ -308,7 +309,7 @@ int perturbations_output_data_at_z(
                 ppt->k_size[index_md]*sizeof(double),
                 ppt->error_message);
 
-    
+
     for (index_tp=0; index_tp<ppt->tp_size[index_md]; index_tp++) {
       for (index_ic=0; index_ic<ppt->ic_size[index_md]; index_ic++) {
 	class_call(perturbations_sources_at_tau(ppt,
@@ -320,7 +321,7 @@ int perturbations_output_data_at_z(
 		   ppt->error_message,
 		   ppt->error_message);
 	for (index_k=0; index_k<ppt->k_size[index_md]; index_k++) {
-	  
+
           tkfull[(index_k * ppt->ic_size[index_md] + index_ic) * ppt->tp_size[index_md] + index_tp] =
             pvecsources[index_k];
         }
@@ -561,7 +562,7 @@ int perturbations_output_titles(
       class_store_columntitle(titles,"d_idr",pba->has_idr);
       if (pba->has_ncdm == _TRUE_) {
         for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++) {
-          sprintf(tmp,"d_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"d_ncdm[%d]",n_ncdm);
           class_store_columntitle(titles,tmp,_TRUE_);
         }
       }
@@ -590,7 +591,7 @@ int perturbations_output_titles(
       class_store_columntitle(titles,"t_idr",pba->has_idr);
       if (pba->has_ncdm == _TRUE_) {
         for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++) {
-          sprintf(tmp,"t_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"t_ncdm[%d]",n_ncdm);
           class_store_columntitle(titles,tmp,_TRUE_);
         }
       }
@@ -707,29 +708,8 @@ int perturbations_init(
   int index_k;
   /* running index for type of perturbation */
   int index_tp;
-  /* pointer to one struct perturbations_workspace per thread (one if no openmp) */
-  struct perturbations_workspace ** pppw;
   /* background quantities */
   double w_fld_ini, w_fld_0,dw_over_da_fld,integral_fld;
-  /* number of threads (always one if no openmp) */
-  int number_of_threads=1;
-  /* index of the thread (always 0 if no openmp) */
-  int thread=0;
-
-  /* This code can be optionally compiled with the openmp option for parallel computation.
-     Inside parallel regions, the use of the command "return" is forbidden.
-     For error management, instead of "return _FAILURE_", we will set the variable below
-     to "abort = _TRUE_". This will lead to a "return _FAILURE_" just after leaving the
-     parallel region. */
-  int abort;
-
-  /* unsigned integer that will be set to the size of the workspace */
-  size_t sz;
-
-#ifdef _OPENMP
-  /* instrumentation times */
-  double tstart, tstop, tspent;
-#endif
 
   /** - perform preliminary checks */
 
@@ -911,60 +891,15 @@ int perturbations_init(
              ppt->error_message,
              ppt->error_message);
 
-  /** - create an array of workspaces in multi-thread case */
-
-#ifdef _OPENMP
-
-#pragma omp parallel
-  {
-    number_of_threads = omp_get_num_threads();
-  }
-#endif
-
-  class_alloc(pppw,number_of_threads * sizeof(struct perturbations_workspace *),ppt->error_message);
-
+  /* Setup task system */
+  class_setup_parallel();
   /** - loop over modes (scalar, tensors, etc). For each mode: */
-
   for (index_md = 0; index_md < ppt->md_size; index_md++) {
 
     if (ppt->perturbations_verbose > 1)
       printf("Evolving mode %d/%d\n",index_md+1,ppt->md_size);
 
-    abort = _FALSE_;
-
-    sz = sizeof(struct perturbations_workspace);
-
-#pragma omp parallel                                            \
-  shared(pppw,ppr,pba,pth,ppt,index_md,abort,number_of_threads) \
-  private(thread)                                               \
-  num_threads(number_of_threads)
-
-    {
-
-#ifdef _OPENMP
-      thread=omp_get_thread_num();
-#endif
-
-      /** - --> (a) create a workspace (one per thread in multi-thread case) */
-
-      class_alloc_parallel(pppw[thread],sz,ppt->error_message);
-
-      /** - --> (b) initialize indices of vectors of perturbations with perturbations_indices_of_current_vectors() */
-
-      class_call_parallel(perturbations_workspace_init(ppr,
-                                                       pba,
-                                                       pth,
-                                                       ppt,
-                                                       index_md,
-                                                       pppw[thread]),
-                          ppt->error_message,
-                          ppt->error_message);
-
-    } /* end of parallel region */
-
-    if (abort == _TRUE_) return _FAILURE_;
-
-    /** - --> (c) loop over initial conditions and wavenumbers; for each of them, evolve perturbations and compute source functions with perturbations_solve() */
+    /** - --> loop over initial conditions and wavenumbers; for each of them, evolve perturbations and compute source functions with perturbations_solve() */
 
     for (index_ic = 0; index_ic < ppt->ic_size[index_md]; index_ic++) {
 
@@ -973,136 +908,88 @@ int perturbations_init(
         printf("evolving %d wavenumbers\n",ppt->k_size[index_md]);
       }
 
-      abort = _FALSE_;
+      /* integrating backwards is slightly more optimal for parallel runs */
+      //for (index_k = 0; index_k < ppt->k_size; index_k++) {
+      for (index_k = ppt->k_size[index_md]-1; index_k >=0; index_k--) {
 
-#pragma omp parallel                                                    \
-  shared(pppw,ppr,pba,pth,ppt,index_md,index_ic,abort,number_of_threads) \
-  private(index_k,thread,tstart,tstop,tspent)                           \
-  num_threads(number_of_threads)
+        class_run_parallel(with_arguments(ppr,pba,pth,ppt,index_md,index_ic,index_k),
 
-      {
-
-#ifdef _OPENMP
-        thread=omp_get_thread_num();
-        tspent=0.;
-#endif
-
-#pragma omp for schedule (dynamic)
-
-        /* integrating backwards is slightly more optimal for parallel runs */
-        //for (index_k = 0; index_k < ppt->k_size; index_k++) {
-        for (index_k = ppt->k_size[index_md]-1; index_k >=0; index_k--) {
-
-          if ((ppt->perturbations_verbose > 2) && (abort == _FALSE_)) {
+          if (ppt->perturbations_verbose > 2) {
             printf("evolving mode k=%e /Mpc  (%d/%d)",ppt->k[index_md][index_k],index_k+1,ppt->k_size[index_md]);
             if (pba->sgnK != 0)
               printf(" (for scalar modes, corresponds to nu=%e)",sqrt(ppt->k[index_md][index_k]*ppt->k[index_md][index_k]+pba->K)/sqrt(pba->sgnK*pba->K));
             printf("\n");
           }
 
-#ifdef _OPENMP
-          tstart = omp_get_wtime();
-#endif
-
-          class_call_parallel(perturbations_solve(ppr,
+          struct perturbations_workspace pw;
+          class_call(perturbations_workspace_init(ppr,
                                                   pba,
                                                   pth,
                                                   ppt,
                                                   index_md,
-                                                  index_ic,
-                                                  index_k,
-                                                  pppw[thread]),
-                              ppt->error_message,
-                              ppt->error_message);
+                                                  &pw),
+                     ppt->error_message,
+                     ppt->error_message);
 
-#ifdef _OPENMP
-          tstop = omp_get_wtime();
+          class_call(perturbations_solve(ppr,
+                                         pba,
+                                         pth,
+                                         ppt,
+                                         index_md,
+                                         index_ic,
+                                         index_k,
+                                         &pw),
+                     ppt->error_message,
+                     ppt->error_message);
 
-          tspent += tstop-tstart;
-#endif
+          class_call(perturbations_workspace_free(ppt,index_md,&pw),
+                     ppt->error_message,
+                     ppt->error_message);
+          return _SUCCESS_;
 
-#pragma omp flush(abort)
+        );
 
-        } /* end of loop over wavenumbers */
-
-#ifdef _OPENMP
-        if (ppt->perturbations_verbose>2)
-          printf("In %s: time spent in parallel region (loop over k's) = %e s for thread %d\n",
-                 __func__,tspent,omp_get_thread_num());
-#endif
-
-      } /* end of parallel region */
-
-      if (abort == _TRUE_) return _FAILURE_;
+      } /* end of loop over wavenumbers */
 
     } /* end of loop over initial conditions */
 
-    abort = _FALSE_;
-
-#pragma omp parallel                                \
-  shared(pppw,ppt,index_md,abort,number_of_threads) \
-  private(thread)                                   \
-  num_threads(number_of_threads)
-
-    {
-
-#ifdef _OPENMP
-      thread=omp_get_thread_num();
-#endif
-
-      class_call_parallel(perturbations_workspace_free(ppt,index_md,pppw[thread]),
-                          ppt->error_message,
-                          ppt->error_message);
-
-    } /* end of parallel region */
-
-    if (abort == _TRUE_) return _FAILURE_;
-
   } /* end loop over modes */
 
-  free(pppw);
+  class_finish_parallel();
+
 
   /** - spline the source array with respect to the time variable */
 
   if (ppt->ln_tau_size > 1) {
 
+    class_setup_parallel();
+
     for (index_md = 0; index_md < ppt->md_size; index_md++) {
 
       for (index_ic = 0; index_ic < ppt->ic_size[index_md]; index_ic++) {
 
-        abort = _FALSE_;
+        for (index_tp = 0; index_tp < ppt->tp_size[index_md]; index_tp++) {
 
-#pragma omp parallel                                    \
-  shared(ppt,index_md,index_ic,abort,number_of_threads) \
-  private(index_tp)                                     \
-  num_threads(number_of_threads)
+          class_run_parallel(with_arguments(ppt, index_md, index_ic, index_tp),
+            class_call(array_spline_table_lines(ppt->ln_tau,
+                                                ppt->ln_tau_size,
+                                                ppt->late_sources[index_md][index_ic * ppt->tp_size[index_md] + index_tp],
+                                                ppt->k_size[index_md],
+                                                ppt->ddlate_sources[index_md][index_ic*ppt->tp_size[index_md] + index_tp],
+                                                _SPLINE_EST_DERIV_,
+                                                ppt->error_message),
+                       ppt->error_message,
+                       ppt->error_message);
+            return _SUCCESS_;
+          );
 
-        {
-
-#pragma omp for schedule (dynamic)
-
-          for (index_tp = 0; index_tp < ppt->tp_size[index_md]; index_tp++) {
-
-            class_call_parallel(array_spline_table_lines(ppt->ln_tau,
-                                                         ppt->ln_tau_size,
-                                                         ppt->late_sources[index_md][index_ic * ppt->tp_size[index_md] + index_tp],
-                                                         ppt->k_size[index_md],
-                                                         ppt->ddlate_sources[index_md][index_ic*ppt->tp_size[index_md] + index_tp],
-                                                         _SPLINE_EST_DERIV_,
-                                                         ppt->error_message),
-                                ppt->error_message,
-                                ppt->error_message);
-
-          }
-
-        } /* end of parallel region */
-
-        if (abort == _TRUE_) return _FAILURE_;
+        } /* end of loop over type of source function*/
 
       } /* end of loop over initial condition */
 
     } /* end of loop over mode */
 
+    class_finish_parallel();
   }
 
   return _SUCCESS_;
@@ -1667,7 +1554,6 @@ int perturbations_timesampling_for_sources(
   int index_tp;
   int index_ic;
   int index_tau;
-  int index_tau_pk;
   int index_ln_tau;
   int last_index_back;
   int last_index_thermo;
@@ -1692,6 +1578,12 @@ int perturbations_timesampling_for_sources(
 
   class_alloc(pvecback,pba->bg_size*sizeof(double),ppt->error_message);
   class_alloc(pvecthermo,pth->th_size*sizeof(double),ppt->error_message);
+
+  /** - check validity of age_fraction precision parameter */
+  class_test((ppr->perturbations_sampling_boost_above_age_fraction < 0.) || (ppr->perturbations_sampling_boost_above_age_fraction > 1.),
+             ppt->error_message,
+             "The precision parameter perturbations_sampling_boost_above_age_fraction should be between 0 and 1, not %e",
+             ppr->perturbations_sampling_boost_above_age_fraction);
 
   /** - first, just count the number of sampling points in order to allocate the array containing all values */
 
@@ -1908,6 +1800,15 @@ int perturbations_timesampling_for_sources(
     /* compute inverse rate */
     timescale_source = 1./timescale_source;
 
+    /* added in v3.2.2: age fraction (between 0 and 1 ) such that,
+       when tau > conformal_age * age_fraction, the time sampling of
+       sources is twice finer, in order to boost the accuracy of the
+       lensing line-of-sight integrals without changing that of
+       unlensed CMB observables */
+    if (tau > pba->conformal_age * ppr->perturbations_sampling_boost_above_age_fraction) {
+      timescale_source /= 2.;
+    }
+
     class_test(fabs(ppr->perturbations_sampling_stepsize*timescale_source/tau) < ppr->smallest_allowed_variation,
                ppt->error_message,
                "integration step =%e < machine precision : leads either to numerical error or infinite loop",ppr->perturbations_sampling_stepsize*timescale_source);
@@ -1989,6 +1890,15 @@ int perturbations_timesampling_for_sources(
     /* compute inverse rate */
     timescale_source = 1./timescale_source;
 
+    /* added in v3.2.2: age fraction (between 0 and 1 ) such that,
+       when tau > conformal_age * age_fraction, the time sampling of
+       sources is twice finer, in order to boost the accuracy of the
+       lensing line-of-sight integrals without changing that of
+       unlensed CMB observables */
+    if (tau > pba->conformal_age * ppr->perturbations_sampling_boost_above_age_fraction) {
+      timescale_source /= 2.;
+    }
+
     class_test(fabs(ppr->perturbations_sampling_stepsize*timescale_source/tau) < ppr->smallest_allowed_variation,
                ppt->error_message,
                "integration step =%e < machine precision : leads either to numerical error or infinite loop",ppr->perturbations_sampling_stepsize*timescale_source);
@@ -2041,8 +1951,7 @@ int perturbations_timesampling_for_sources(
     }
     index_tau --;
 
-    /* now we are at the largest value of tau such that z>z_max_pk. We store it. */
-    index_tau_pk = index_tau;
+    /* now we are at the largest value of tau such that z>z_max_pk. */
     class_test(index_tau<0,
                ppt->error_message,
                "by construction, this should never happen, a bug must have been introduced somewhere");
@@ -2230,6 +2139,9 @@ int perturbations_get_k_list(
     if (ppt->has_nl_corrections_based_on_delta_m == _TRUE_)
       k_max = MAX(k_max,ppr->nonlinear_min_k_max);
 
+    if ((ppt->has_cl_cmb_lensing_potential == _TRUE_) && (ppt->want_lcmb_full_limber == _TRUE_))
+      k_max = MAX(k_max, ppr->k_max_limber_over_l_max_scalars * ppt->l_scalar_max);
+
     /** - --> test that result for k_min, k_max make sense */
 
     class_test(k_min<0.,
@@ -2364,7 +2276,6 @@ int perturbations_get_k_list(
     ppt->k_size[ppt->index_md_scalars] = index_k;
 
     class_realloc(ppt->k[ppt->index_md_scalars],
-                  ppt->k[ppt->index_md_scalars],
                   ppt->k_size[ppt->index_md_scalars]*sizeof(double),
                   ppt->error_message);
   }
@@ -2498,7 +2409,6 @@ int perturbations_get_k_list(
     ppt->k_size[ppt->index_md_vectors] = index_k;
 
     class_realloc(ppt->k[ppt->index_md_vectors],
-                  ppt->k[ppt->index_md_vectors],
                   ppt->k_size[ppt->index_md_vectors]*sizeof(double),
                   ppt->error_message);
   }
@@ -2632,7 +2542,6 @@ int perturbations_get_k_list(
     ppt->k_size[ppt->index_md_tensors] = index_k;
 
     class_realloc(ppt->k[ppt->index_md_tensors],
-                  ppt->k[ppt->index_md_tensors],
                   ppt->k_size[ppt->index_md_tensors]*sizeof(double),
                   ppt->error_message);
   }
@@ -2953,8 +2862,6 @@ int perturbations_workspace_free (
     }
   }
 
-  free(ppw);
-
   return _SUCCESS_;
 }
 
@@ -3043,13 +2950,12 @@ int perturbations_solve(
 
   /* function pointer to ODE evolver and names of possible evolvers */
 
-  extern int evolver_rk();
-  extern int evolver_ndf15();
-  int (*generic_evolver)();
+
+  auto generic_evolver = &(evolver_ndf15);
 
 
   /* Related to the perturbation output */
-  int (*perhaps_print_variables)();
+  int (*perhaps_print_variables)(double, double*, double*, void*, char*);
   int index_ikout;
 
   /** - initialize indices relevant for back/thermo tables search */
@@ -3427,13 +3333,13 @@ int perturbations_prepare_k_output(struct background * pba,
       /* Non-cold dark matter */
       if ((pba->has_ncdm == _TRUE_) && ((ppt->has_density_transfers == _TRUE_) || (ppt->has_velocity_transfers == _TRUE_) || (ppt->has_source_delta_m == _TRUE_))) {
         for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          sprintf(tmp,"delta_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"delta_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->scalar_titles,tmp,_TRUE_);
-          sprintf(tmp,"theta_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"theta_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->scalar_titles,tmp,_TRUE_);
-          sprintf(tmp,"shear_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"shear_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->scalar_titles,tmp,_TRUE_);
-          sprintf(tmp,"cs2_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"cs2_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->scalar_titles,tmp,_TRUE_);
         }
       }
@@ -3475,11 +3381,11 @@ int perturbations_prepare_k_output(struct background * pba,
 
       if (ppt->evolve_tensor_ncdm == _TRUE_) {
         for (n_ncdm=0; n_ncdm < pba->N_ncdm; n_ncdm++){
-          sprintf(tmp,"delta_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"delta_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->tensor_titles,tmp,_TRUE_);
-          sprintf(tmp,"theta_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"theta_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->tensor_titles,tmp,_TRUE_);
-          sprintf(tmp,"shear_ncdm[%d]",n_ncdm);
+          class_sprintf(tmp,"shear_ncdm[%d]",n_ncdm);
           class_store_columntitle(ppt->tensor_titles,tmp,_TRUE_);
         }
       }
@@ -6138,7 +6044,7 @@ int perturbations_approximations(
   /** - evaluate background quantities with background_at_tau() and
       Hubble time scale \f$ \tau_h = a/a' \f$ */
 
-  class_call(background_at_tau(pba,tau, normal_info, ppw->inter_mode, &(ppw->last_index_back), ppw->pvecback),
+  class_call(background_at_tau(pba,tau, normal_info, (interpolation_method)ppw->inter_mode, &(ppw->last_index_back), ppw->pvecback),
              pba->error_message,
              ppt->error_message);
 
@@ -6157,7 +6063,7 @@ int perturbations_approximations(
     class_call(thermodynamics_at_z(pba,
                                    pth,
                                    1./ppw->pvecback[pba->index_bg_a]-1.,  /* redshift z=1/a-1 */
-                                   ppw->inter_mode,
+                                   (interpolation_method)ppw->inter_mode,
                                    &(ppw->last_index_thermo),
                                    ppw->pvecback,
                                    ppw->pvecthermo),
@@ -6313,7 +6219,7 @@ int perturbations_approximations(
     class_call(thermodynamics_at_z(pba,
                                    pth,
                                    1./ppw->pvecback[pba->index_bg_a]-1.,  /* redshift z=1/a-1 */
-                                   ppw->inter_mode,
+                                   (interpolation_method)ppw->inter_mode,
                                    &(ppw->last_index_thermo),
                                    ppw->pvecback,
                                    ppw->pvecthermo),
@@ -6406,7 +6312,7 @@ int perturbations_timescale(
   double * pvecthermo;
 
   /** - extract the fields of the parameter_and_workspace input structure */
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
   pba = pppaw->pba;
   pth = pppaw->pth;
   ppt = pppaw->ppt;
@@ -6425,7 +6331,7 @@ int perturbations_timescale(
   /** - evaluate background quantities with background_at_tau() and
       Hubble time scale \f$ \tau_h = a/a' \f$ */
 
-  class_call(background_at_tau(pba,tau, normal_info, ppw->inter_mode, &(ppw->last_index_back), pvecback),
+  class_call(background_at_tau(pba,tau, normal_info, (interpolation_method)ppw->inter_mode, &(ppw->last_index_back), pvecback),
              pba->error_message,
              error_message);
 
@@ -6449,7 +6355,7 @@ int perturbations_timescale(
       class_call(thermodynamics_at_z(pba,
                                      pth,
                                      1./pvecback[pba->index_bg_a]-1.,  /* redshift z=1/a-1 */
-                                     ppw->inter_mode,
+                                     (interpolation_method)ppw->inter_mode,
                                      &(ppw->last_index_thermo),
                                      pvecback,
                                      pvecthermo),
@@ -6480,7 +6386,7 @@ int perturbations_timescale(
       class_call(thermodynamics_at_z(pba,
                                      pth,
                                      1./pvecback[pba->index_bg_a]-1.,  /* redshift z=1/a-1 */
-                                     ppw->inter_mode,
+                                     (interpolation_method)ppw->inter_mode,
                                      &(ppw->last_index_thermo),
                                      pvecback,
                                      pvecthermo),
@@ -6510,7 +6416,7 @@ int perturbations_timescale(
       class_call(thermodynamics_at_z(pba,
                                      pth,
                                      1./pvecback[pba->index_bg_a]-1.,  /* redshift z=1/a-1 */
-                                     ppw->inter_mode,
+                                     (interpolation_method)ppw->inter_mode,
                                      &(ppw->last_index_thermo),
                                      pvecback,
                                      pvecthermo),
@@ -7487,7 +7393,7 @@ int perturbations_sources(
   double dmu_idm_g = 0., ddmu_idm_g = 0., exp_mu_idm_g = 0.;
   /** - rename structure fields (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
   ppr = pppaw->ppr;
   pba = pppaw->pba;
   pth = pppaw->pth;
@@ -8164,7 +8070,7 @@ int perturbations_print_variables(double tau,
 
   /** - rename structure fields (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
   k = pppaw->k;
   index_md = pppaw->index_md;
 
@@ -8291,7 +8197,7 @@ int perturbations_print_variables(double tau,
         theta_idr = y[ppw->pv->index_pt_theta_idr];
 
         if (ppt->idr_nature == idr_free_streaming){
-          if ((ppw->approx[ppw->index_ap_tca_idm_dr] == (int)tca_idm_dr_on)){
+          if (ppw->approx[ppw->index_ap_tca_idm_dr] == (int)tca_idm_dr_on){
             shear_idr = ppw->tca_shear_idm_dr;
           }
           else{
@@ -8499,9 +8405,9 @@ int perturbations_print_variables(double tau,
       ppt->size_scalar_perturbation_data[ppw->index_ikout] = 0;
     }
     else{
-      ppt->scalar_perturbations_data[ppw->index_ikout] =
-        realloc(ppt->scalar_perturbations_data[ppw->index_ikout],
-                sizeof(double)*(ppt->size_scalar_perturbation_data[ppw->index_ikout]+ppt->number_of_scalar_titles));
+      class_realloc(ppt->scalar_perturbations_data[ppw->index_ikout],
+                    (ppt->size_scalar_perturbation_data[ppw->index_ikout]+ppt->number_of_scalar_titles)*sizeof(double),
+                    ppt->error_message);
     }
     storeidx = 0;
     dataptr = ppt->scalar_perturbations_data[ppw->index_ikout]+
@@ -8610,7 +8516,7 @@ int perturbations_print_variables(double tau,
     }
     else{
       ppt->tensor_perturbations_data[ppw->index_ikout] =
-        realloc(ppt->tensor_perturbations_data[ppw->index_ikout],
+        (double*)realloc(ppt->tensor_perturbations_data[ppw->index_ikout],
                 sizeof(double)*(ppt->size_tensor_perturbation_data[ppw->index_ikout]+ppt->number_of_tensor_titles));
     }
     storeidx = 0;
@@ -8791,7 +8697,7 @@ int perturbations_derivs(double tau,
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
 
   k = pppaw->k;
   k2=k*k;
@@ -8865,7 +8771,7 @@ int perturbations_derivs(double tau,
       photon_scattering_rate += pvecthermo[pth->index_th_dmu_idm_g];
       S_idm_g = 4./3. * pvecback[pba->index_bg_rho_g] / pvecback[pba->index_bg_rho_idm];
     }
-    if ((pth->has_idm_dr == _TRUE_)){
+    if (pth->has_idm_dr == _TRUE_){
       S_idm_dr = 4./3. * pvecback[pba->index_bg_rho_idr]/ pvecback[pba->index_bg_rho_idm];
       dmu_idm_dr = pvecthermo[pth->index_th_dmu_idm_dr];
       dmu_idr = pth->b_idr/pth->a_idm_dr*pba->Omega0_idr/pba->Omega0_idm*dmu_idm_dr;
@@ -9995,10 +9901,10 @@ int perturbations_tca_slip_and_shear(double * y,
 
   /* idm_g effects on tca */
   double theta_idm = 0., theta_idm_prime = 0.;
-  double tau_2_idm_g, dtau_2_idm_g;
+  double tau_2_idm_g=0., dtau_2_idm_g=0.;
   double dmu_idm_g = 0., ddmu_idm_g = 0.;
   /* in case of idm_b - for notation see 1802.06788 */
-  double tau_idm_b, dtau_idm_b;
+  double tau_idm_b=0., dtau_idm_b=0.;
   double R_idm_b = 0., R_idm_b_prime = 0.;
   double S_idm_b = 0.;
 
@@ -10007,7 +9913,7 @@ int perturbations_tca_slip_and_shear(double * y,
 
   /** - rename the fields of the input structure (just to avoid heavy notations) */
 
-  pppaw = parameters_and_workspace;
+  pppaw = (struct perturbations_parameters_and_workspace *)parameters_and_workspace;
 
   k = pppaw->k;
   k2=k*k;
