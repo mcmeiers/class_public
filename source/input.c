@@ -3271,7 +3271,7 @@ int input_read_parameters_species(struct file_content * pfc,
                   pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] -=  gdm_integral_ref;
               }
           }
-          // Calculate the integral of w from the
+          // Calculate the integral of w wrt log10a 
           if(pba->Omega0_gdm==0){
               double Delta_log10a = log10a_today-pba->gdm_log10a_vals[gdm_a_today_interval_idx];
               double Delta_w = Delta_log10a * pba->gdm_w_array[gdm_a_today_interval_idx*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
@@ -3585,7 +3585,7 @@ int input_read_parameters_species(struct file_content * pfc,
                                   &flag1,
                                   errmsg),
                errmsg,errmsg);
-    class_test(!flag1^(pba->Omega0_gdm!=0),errmsg,"Generalized dark matter exclusively requires omega_gdm or gdm_alpha where alpha=rho_gdm/rho_bg at z=z_apha. Check your .ini file.");
+    class_test(!flag1^(pba->Omega0_gdm!=0),errmsg,"Generalized dark matter exclusively requires Omega_gdm or gdm_alpha where alpha=rho_gdm/rho_bg at z=z_apha. Check your .ini file.");
     // Calculate Omega0_gdm = rho_gdm_0/ H0^2
     // Where rho_gdm_0= rho_alpha * (z_alpha+1)^-3 exp(-3(int w frop lna_alpha to lna_today ))
     // we must also include a factor of log(10) to account for our integral uses log10a
