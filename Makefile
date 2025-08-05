@@ -45,7 +45,7 @@ OMPFLAG   = -pthread #-fopenmp
 #OMPFLAG   = -openmp
 
 # all other compilation flags
-CCFLAG = -g -fPIC
+CCFLAG   = -g -fPIC -std=c99 -Wall -Wno-deprecated-declarations -O3 -DNPY_NO_DEPRECATED_API=NPY_1_7_API_VERSION
 LDFLAG = -g -fPIC
 
 # leave blank to compile without HyRec, or put path to HyRec directory

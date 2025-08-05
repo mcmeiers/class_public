@@ -297,7 +297,7 @@ class_precision_parameter(tight_coupling_trigger_tau_c_over_tau_dmu_idm_g, doubl
  */
 class_precision_parameter(tight_coupling_trigger_tau_c_over_tau_R_idm_b, double, 0.01)
 
-class_precision_parameter(start_sources_at_tau_c_over_tau_h,double,0.008) /**< sources start being sampled when universe is sufficiently opaque. This is quantified in terms of the ratio of thermo to hubble time scales, \f$ \tau_c/\tau_H \f$. Start when start_sources_at_tau_c_over_tau_h equals this ratio. Decrease this value to start sampling the sources earlier in time. */
+class_precision_parameter(start_sources_at_tau_c_over_tau_h,double,0.006) /**< sources start being sampled when universe is sufficiently opaque. This is quantified in terms of the ratio of thermo to hubble time scales, \f$ \tau_c/\tau_H \f$. Start when start_sources_at_tau_c_over_tau_h equals this ratio. Decrease this value to start sampling the sources earlier in time. */
 
 class_precision_parameter(tight_coupling_approximation,int,(int)compromise_CLASS) /**< method for tight coupling approximation */
 

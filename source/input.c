@@ -2123,10 +2123,16 @@ int input_read_parameters_general(struct file_content * pfc,
   if (flag1 == _TRUE_){
     pba->H0 = param1*1.e3/_c_;
     pba->h = param1/100.;
+      
+    printf("H0 (from param1) = %f\n", pba->H0);
+    printf("h (from param1) = %f\n", pba->h);
   }
   if (flag2 == _TRUE_){
     pba->H0 = param2*1.e5/_c_;
     pba->h = param2;
+      
+    printf("H0 (from param1) = %f\n", pba->H0);
+    printf("h (from param1) = %f\n", pba->h);
   }
 
 
@@ -3185,6 +3191,8 @@ int input_read_parameters_species(struct file_content * pfc,
                                   &flag2,
                                   errmsg),
                errmsg,errmsg);
+      
+    printf("Omega0_gdm = %e\n", pba->Omega0_gdm); 
 
     class_test(pba->gdm_z_alpha !=0.0 && flag2==_TRUE_,errmsg,"Generalized dark matter only accommodates z_alpha with gdm_alpha and not with Omega_gdm. Check your .ini file.");
 
@@ -3194,6 +3202,8 @@ int input_read_parameters_species(struct file_content * pfc,
                errmsg);
     // Assumes cubic unless specified
     pba->gdm_w_interpolation_method = gdm_cubic;
+    
+    fprintf(stdout, "gdm_w_interpolation_method: %d\n", pba->gdm_w_interpolation_method);
 
     if(flag1 == _TRUE_){
         switch(gdm_order){
@@ -3289,10 +3299,15 @@ int input_read_parameters_species(struct file_content * pfc,
       pba->index_gdm_int_w_dlog10a = 2;
       pba->gdm_w_array_num_cols=3;
       class_alloc(pba->gdm_w_array,pba->gdm_w_array_num_cols*pba->gdm_num_in_knots*sizeof(double),errmsg);
-
+        
+      fprintf(stdout, "Allocated gdm_w_array with %zu rows and %zu columns\n", pba->gdm_num_in_knots, pba->gdm_w_array_num_cols);
+        
       // Store w values in the spline array and ensure parameters are between -1 and 1
       for (size_t i = 0; i < pba->gdm_num_in_knots; i++) {
           pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]=pointer1[i];
+          
+          fprintf(stdout, "Stored w[%zu] = %g\n", i, pba->gdm_w_array[i * pba->gdm_w_array_num_cols + pba->index_gdm_w]);
+          
           class_test((pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]<-1)||(pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]>1),errmsg,"Generalized dark matter w value indexed %d read as %g and breaks |w|<1 assumption. Check your .ini file.",i,pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_w]);
       }
       // Free the storage of w values now that they've been stored in spline array
@@ -3302,6 +3317,9 @@ int input_read_parameters_species(struct file_content * pfc,
       for (size_t i = 1; i < pba->gdm_num_in_knots; i++) {
         if(pba->gdm_log10a_vals[i]<=log10a_alpha) gdm_ref_interval_idx++;
         if(pba->gdm_log10a_vals[i]<=log10a_today) gdm_a_today_interval_idx++;
+        
+        fprintf(stdout, "Checked gdm_log10a_vals[%zu] = %g, gdm_ref_interval_idx = %zu, gdm_a_today_interval_idx = %zu\n", i, pba->gdm_log10a_vals[i], gdm_ref_interval_idx, gdm_a_today_interval_idx);
+          
         class_test(pba->gdm_log10a_vals[i-1]>=pba->gdm_log10a_vals[i],pba->error_message,"Generalized dark matter anchors indexed %d and %d are out of cronological order, anchors should be increasing values of Log(a). Check your .ini file.",i-1,i);
       }
 
@@ -3316,6 +3334,8 @@ int input_read_parameters_species(struct file_content * pfc,
                                                  pba->error_message),
                  pba->error_message,
                  pba->error_message);
+        
+      fprintf(stdout, "Initialized spline for gdm_w_array\n");
 
       // Integrate out from log10a_alpha to gdm_log10a_vals[i]
       // Do check to ensure |w|<1
@@ -3336,6 +3356,8 @@ int input_read_parameters_species(struct file_content * pfc,
         w2=pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on right boundary
         ddw1=h*h*pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2];   // w''(t) on left boundary
         ddw2=h*h*pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2]; // w''(t) on right boundary
+        
+        fprintf(stdout, "Interval %zu: h = %g, w1 = %g, w2 = %g, ddw1 = %g, ddw2 = %g\n", i, h, w1, w2, ddw1, ddw2);
 
         // Integrate over the interval recored the accumulated integral from inital
         pba->gdm_w_array[(i+1)*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
@@ -3385,7 +3407,7 @@ int input_read_parameters_species(struct file_content * pfc,
               if(t>0 && t<1 ){
                 r = 1-t; // distance from right side of interval
                 w_ext = r*w1 + t*w2 + ((r*r-1)*r*ddw1  +(t*t-1)*t*ddw2)/6.;
-                //printf("(t=%e, w1=%e, w2=%e, ddw1=%e, ddw2=%e, w_ex=%e)\n",t,w1,w2,ddw1,ddw2,w_ext);
+                printf("(t=%e, w1=%e, w2=%e, ddw1=%e, ddw2=%e, w_ex=%e)\n",t,w1,w2,ddw1,ddw2,w_ext);
                 class_test(w_ext<-1 || w_ext >1,
                            errmsg,
                            "|w|>1 in interval indexed %i, check gdm_w_vals",i);
@@ -3409,6 +3431,9 @@ int input_read_parameters_species(struct file_content * pfc,
           wrksp_intgrl=pba->gdm_w_array[i*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
                        +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
                            -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
+            
+          fprintf(stdout, "Computed integral from log10a_alpha: %g\n", wrksp_intgrl);
+            
           // Shift previous integrals to be integrating from log10a_alpha
           // Future ones adjusted automatically since next update will use a shifted value.
           for(size_t j=0; j<i+2;j++){
@@ -3574,7 +3599,7 @@ int input_read_parameters_species(struct file_content * pfc,
 
       }
 
-        //printf("Omega_gdm=%e, rho_alpha=%e, z_alpha_fac=%e, int_fac=%e, H0=%e \n",pba->Omega0_gdm, pba->rho_alpha_gdm,pow(1/(pba->gdm_z_alpha+1),3),exp(-3.0*log(10)*int_w_alpha_to_today),pba->H0 );
+        printf("Omega_gdm=%e, rho_alpha=%e, z_alpha_fac=%e, int_fac=%e, H0=%e \n",pba->Omega0_gdm, pba->rho_alpha_gdm,pow(1/(pba->gdm_z_alpha+1),3),exp(-3.0*log(10)*int_w_alpha_to_today),pba->H0 );
       }
 
 
@@ -3601,7 +3626,17 @@ int input_read_parameters_species(struct file_content * pfc,
                         *exp(-3.0*log(10)*int_w_alpha_to_today)/pba->H0/pba->H0;
     }
     else{
-      pba->rho_alpha_gdm = pba->Omega0_gdm*pba->H0*pba->H0;
+      //pba->rho_alpha_gdm = pba->Omega0_gdm*pba->H0*pba->H0;
+        
+      double scaled_H0 = pba->H0 * 1e5; 
+      printf("scaled_H0 = %e\n", scaled_H0);
+      printf("scaled_H0^2 = %e\n", scaled_H0 * scaled_H0);
+        
+      pba->rho_alpha_gdm = pba->Omega0_gdm * scaled_H0 * scaled_H0 * 1e-10;
+        
+      printf("Omega0_gdm = %f\n", pba->Omega0_gdm);
+      printf("H0 = %f\n", pba->H0);
+      printf("rho_alpha_gdm = %e\n", pba->rho_alpha_gdm);
     }
 
     // Could refactor by assuming if c_eff is provided then nap is to be included
@@ -3704,6 +3739,11 @@ int input_read_parameters_species(struct file_content * pfc,
   Omega_tot += pba->Omega0_idr;
   Omega_tot += pba->Omega0_ncdm_tot;
   Omega_tot += pba->Omega0_gdm;   // generalized dark matter addition
+    
+  printf("Omega_tot = %f\n", Omega_tot);
+  printf("Omega0_gdm = %f\n", pba->Omega0_gdm);
+    
+    
   /* Step 1 */
   if (flag1 == _TRUE_){
     pba->Omega0_lambda = param1;
@@ -6342,7 +6382,7 @@ int input_default_params(struct background *pba,
   /** 9.b.4) Shooting parameter */
   pba->shooting_failed = _FALSE_;
   /* Generalized dark matter additions */
-  pba->Omega0_gdm = 0.0;
+  // pba->Omega0_gdm = 0.0;
 
   /**
    * Deafult to input_read_parameters_heating

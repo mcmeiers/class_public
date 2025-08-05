@@ -13,6 +13,10 @@
 #include "hyrectools.h"
 #include "energy_injection.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 /***************************************************************************************
 Total volumic rate of energy *injection*, in eV/cm^3/s due to DM annihilation 

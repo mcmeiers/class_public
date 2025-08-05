@@ -1678,12 +1678,26 @@ int perturbations_timesampling_for_sources(
                pth->error_message,
                ppt->error_message);
 
-    class_test(pvecback[pba->index_bg_a]*
-               pvecback[pba->index_bg_H]/
-               pvecthermo[pth->index_th_dkappa] <
-               ppr->start_sources_at_tau_c_over_tau_h,
-               ppt->error_message,
-               "your choice of initial time for computing sources is inappropriate: it corresponds to a time after recombination. You should decrease 'start_sources_at_tau_c_over_tau_h'\n");
+    
+    double current_value = pvecback[pba->index_bg_a] * pvecback[pba->index_bg_H] / pvecthermo[pth->index_th_dkappa];
+
+    class_test(current_value < ppr->start_sources_at_tau_c_over_tau_h,
+           ppt->error_message,
+           "Your choice of initial time for computing sources is inappropriate: it corresponds to a time after recombination.\n"
+           "Current value: %g, pba->index_bg_a: %g, pba->index_bg_H: %g, pth->index_th_dkappa: %g, start_sources_at_tau_c_over_tau_h: %g\n",
+           current_value,
+           pvecback[pba->index_bg_a],
+           pvecback[pba->index_bg_H],
+           pvecthermo[pth->index_th_dkappa],
+           ppr->start_sources_at_tau_c_over_tau_h);
+
+
+//    class_test(pvecback[pba->index_bg_a]*
+//               pvecback[pba->index_bg_H]/
+//               pvecthermo[pth->index_th_dkappa] <
+//               ppr->start_sources_at_tau_c_over_tau_h,
+//               ppt->error_message,
+//               "your choice of initial time for computing sources is inappropriate: it corresponds to a time after recombination. You //should decrease 'start_sources_at_tau_c_over_tau_h'\n");
 
     tau_mid = 0.5*(tau_lower + tau_upper);
 
@@ -7195,6 +7209,11 @@ int perturbations_total_stress_energy(
     if (pba->has_gdm == _TRUE_){
       w_gdm = ppw->pvecback[pba->index_bg_gdm_w];
       ca2_gdm = cs2_gdm = w_gdm - ppw->pvecback[pba->index_bg_gdm_dw_over_dlna]/3./(1.+w_gdm);
+      
+      if (ca2_gdm < 0) ca2_gdm = 0.0;
+      if (cs2_gdm < 0) cs2_gdm = 0.0;
+      //printf("Scale factor a = %e, ca2_gdm = %e\n", a, ca2_gdm);
+      
       if (pba->has_nap_gdm == _TRUE_){
           cs2_gdm = pba->gdm_c_eff2;
       }
@@ -9685,11 +9704,19 @@ int perturbations_derivs(double tau,
 
     // Generalized dark matter Additions
     if (pba->has_gdm == _TRUE_) {
+      
+    
+      double delta_gdm_rest ;   
+    
       //Some working variable for clarity
       w_gdm=pvecback[pba->index_bg_gdm_w];
       cv2_gdm = pba->gdm_c_vis2;
       // ca2, cs2 are the adiabatic and effective speed of sound respectively
       ca2_gdm = cs2_gdm = w_gdm-pvecback[pba->index_bg_gdm_dw_over_dlna]/(1.+w_gdm)/3.;
+
+      if (ca2_gdm < 0) ca2_gdm = 0.0;
+      if (cs2_gdm < 0) cs2_gdm = 0.0;
+      
       if (pba->has_nap_gdm == _TRUE_){
         cs2_gdm = pba->gdm_c_eff2;
       }
@@ -9697,10 +9724,10 @@ int perturbations_derivs(double tau,
       dy[pv->index_pt_delta_gdm] = 3.*(w_gdm-cs2_gdm)*a_prime_over_a*y[pv->index_pt_delta_gdm]
                                  -(1.+w_gdm)*(1+9.*(cs2_gdm-ca2_gdm)*a_prime_over_a*a_prime_over_a/k2)*y[pv->index_pt_theta_gdm]
                                  -(1.+w_gdm)*metric_continuity;
-      // if (pba->has_nap_gdm == _TRUE_){
-      //       delta_gdm_rest=y[pv->index_pt_delta_gdm]+3.*a_prime_over_a*(1+w_gdm)*y[pv->index_pt_theta_gdm]/k2;
-      //       dy[pv->index_pt_delta_gdm] += -3*a_prime_over_a*(pba->gdm_c_eff2-ca2_gdm)*delta_gdm_rest;
-      // }
+      if (pba->has_nap_gdm == _TRUE_){ 
+            delta_gdm_rest=y[pv->index_pt_delta_gdm]+3.*a_prime_over_a*(1+w_gdm)*y[pv->index_pt_theta_gdm]/k2;
+            dy[pv->index_pt_delta_gdm] += -3*a_prime_over_a*(pba->gdm_c_eff2-ca2_gdm)*delta_gdm_rest;
+      }
 
       //theta_gdm evolution
       dy[pv->index_pt_theta_gdm]=(3.*cs2_gdm-1.)*a_prime_over_a*y[pv->index_pt_theta_gdm]

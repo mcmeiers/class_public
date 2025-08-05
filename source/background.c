@@ -575,10 +575,73 @@ int background_functions(
   /** TODO add comments  */
   /** Assumes K=0 and only matter, radiatoin and Lambda */
   if(pba->has_gdm == _TRUE_){
+
+      static int is_computed = 0; // Static variable to track whether computation is done  
+
+if (!is_computed) {
+    pba->gdm_integral_at_1 = 0.0; // Initialize the integral value
+    double log10a_at_1 = 0.0;     // log10(1) = 0
+    double cumulative_integral = 0.0; // Cumulative integral value
+
+    // Loop through all intervals up to log10(a) = 1
+    for (int i = 0; i < (40000 - 1); i++) {
+        double h = pba->gdm_log10a_vals[i + 1] - pba->gdm_log10a_vals[i]; // Interval size
+        double w1 = pba->gdm_w_array[i * pba->gdm_w_array_num_cols + pba->index_gdm_w]; // w at left boundary
+        double w2 = pba->gdm_w_array[(i + 1) * pba->gdm_w_array_num_cols + pba->index_gdm_w]; // w at right boundary
+        double ddw1 = h * h * pba->gdm_w_array[i * pba->gdm_w_array_num_cols + pba->index_gdm_d2w_by_dlog10a2]; // w'' at left boundary
+        double ddw2 = h * h * pba->gdm_w_array[(i + 1) * pba->gdm_w_array_num_cols + pba->index_gdm_d2w_by_dlog10a2]; // w'' at right boundary
+
+        // Debug print to track values for each interval
+        //printf("Interval %d: h = %e, w1 = %e, w2 = %e, ddw1 = %e, ddw2 = %e\n", i, h, w1, w2, ddw1, ddw2);
+
+        // Check if the interval contains log10(a) = 1
+        if (pba->gdm_log10a_vals[i] <= log10a_at_1 && pba->gdm_log10a_vals[i + 1] > log10a_at_1) {
+            // Interpolate up to log10(a) = 1
+            double t = (log10a_at_1 - pba->gdm_log10a_vals[i]) / h; // Normalized position
+            double r = 1.0 - t; // Complement of t
+
+            // Debug print for interpolation parameters
+            //printf("Interpolation: t = %e, r = %e\n", t, r);
+
+            // Cubic interpolation
+            double partial_integral = pba->gdm_w_array[i * pba->gdm_w_array_num_cols + pba->index_gdm_int_w_dlog10a]
+                + h * (t * t * (12.0 * w2 + (t * t - 2) * ddw2) / 24.0
+                       - (r * r - 1) * (12.0 * w1 + (r * r - 1) * ddw1) / 24.0);
+
+            cumulative_integral += partial_integral;
+
+            //printf("Partial integral for this interval: %e\n", partial_integral);
+
+            break; // Stop once we reach log10(a) = 1
+        } else {
+            // Full interval contribution (no interpolation)
+            double full_interval_contrib = pba->gdm_w_array[i * pba->gdm_w_array_num_cols + pba->index_gdm_int_w_dlog10a];
+            cumulative_integral = full_interval_contrib;
+
+            //printf("Full interval contribution: %e\n", full_interval_contrib);
+        }
+    }
+
+    // Store the result
+    pba->gdm_integral_at_1 = cumulative_integral;
+    //printf("int_w_dlog10a_at_1: %e\n", pba->gdm_integral_at_1);
+
+    // Mark the computation as complete
+    is_computed = 1;
+
+    // You can now use `gdm_integral_at_1` for further calculations
+}
+
+
+
+      
+      
     double log10a=log10(a);
     // find  w, dw_dlog10a, int_w_dlog10a, rho_gdm depending on spline method
     double w, dw_dlog10a,d2w_dlog10a2, int_w_dlog10a ,rho_gdm;
     if(pba->gdm_w_interpolation_method == gdm_linear){
+        
+        printf("linear\n");
         // Find interval that log10(a) lies in
         int gdm_interval_index;
         if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
@@ -597,44 +660,52 @@ int background_functions(
         dw_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_dw_by_dlog10a];
         double w_i = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w];
         w = w_i + dw_dlog10a*Delta_log10a;
+        
+        
         int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a] + (Delta_log10a)*(w_i+dw_dlog10a*Delta_log10a/2.0);
         d2w_dlog10a2= 0;
     }
-    // if(pba->gdm_w_interpolation_method == gdm_cubic){
-    //   // Find interval that log10(a) lies in
-    //   int gdm_interval_index;
-    //   if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
-    //       while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
-    //         pba->gdm_last_index++;
-    //     }
-    //   }
-    //   else{
-    //     while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
-    //     pba->gdm_last_index--;
-    //     }
-    //   }
-    //   gdm_interval_index=pba->gdm_last_index;
+     if(pba->gdm_w_interpolation_method == gdm_cubic){
+      // Find interval that log10(a) lies in
+      //printf("cubic\n") ;    
+         
+      int gdm_interval_index;
+      if (pba->gdm_log10a_vals[pba->gdm_last_index]<=log10a) {
+           while(pba->gdm_log10a_vals[pba->gdm_last_index+1]<log10a){
+             pba->gdm_last_index++;
+         }
+       }
+       else{
+         while(pba->gdm_log10a_vals[pba->gdm_last_index]>log10a){
+         pba->gdm_last_index--;
+        }
+       }
+       gdm_interval_index=pba->gdm_last_index;
 
-    //   // Locally load info for the section of the spline
-    //   // normalize such that the original interval of log10a in [gdm_log10a_vals[i],gdm_log10a_vals[i+1]]
-    //   // is linearly mapped to t in [0,1] via t = (log10a - gdm_log10a_vals[i])/h
-    //   // where h = gdm_log10a_vals[i+1]- gdm_log10a_vals[i] is the unnormalized interval length
-    //   // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d2w_by_dlog10a2
-    //   double h = pba->gdm_log10a_vals[gdm_interval_index+1] - pba->gdm_log10a_vals[gdm_interval_index];            // interval size
-    //   double t = (log10a - pba->gdm_log10a_vals[gdm_interval_index])/h;                           // normalized distance from left side of interval
-    //   double r = 1-t;                                                            // normalized distance from right side of interval
-    //   double w1=pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on left boundary
-    //   double w2=pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on right boundary
-    //   double ddw1=h*h*pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2];   // w''(t) on left boundary
-    //   double ddw2=h*h*pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2]; // w''(t) on right boundary
+       // Locally load info for the section of the spline
+       // normalize such that the original interval of log10a in [gdm_log10a_vals[i],gdm_log10a_vals[i+1]]
+       // is linearly mapped to t in [0,1] via t = (log10a - gdm_log10a_vals[i])/h
+       // where h = gdm_log10a_vals[i+1]- gdm_log10a_vals[i] is the unnormalized interval length
+       // this sets w_i(0)=w1, w_i(1)=w2,  w_i''(t)= h^2 * d2w_by_dlog10a2
+       double h = pba->gdm_log10a_vals[gdm_interval_index+1] - pba->gdm_log10a_vals[gdm_interval_index];            // interval size
+       double t = (log10a - pba->gdm_log10a_vals[gdm_interval_index])/h;                           // normalized distance from left side of interval
+       double r = 1-t;                                                            // normalized distance from right side of interval
+       double w1=pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on left boundary
+       double w2=pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_w];  // w on right boundary
+       double ddw1=h*h*pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2];   // w''(t) on left boundary
+       double ddw2=h*h*pba->gdm_w_array[(gdm_interval_index+1)*pba->gdm_w_array_num_cols+pba->index_gdm_d2w_by_dlog10a2]; // w''(t) on right boundary
 
-    //   w = r*w1 + t*w2 + ((r*r-1)*r*ddw1  +(t*t-1)*t*ddw2)/6.;
-    //   dw_dlog10a = ((w2-w1)+ ((3*t*t-1)*ddw2-(3*r*r-1)*ddw1)/6)/h;
-    //   d2w_dlog10a2 = (ddw2*t+ddw1*r)/h/h;
-    //   int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
-    //                   +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
-    //                       -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0);
-    // }
+      w = r*w1 + t*w2 + ((r*r-1)*r*ddw1  +(t*t-1)*t*ddw2)/6.;
+      dw_dlog10a = ((w2-w1)+ ((3*t*t-1)*ddw2-(3*r*r-1)*ddw1)/6)/h;
+      d2w_dlog10a2 = (ddw2*t+ddw1*r)/h/h;
+      int_w_dlog10a = pba->gdm_w_array[gdm_interval_index*pba->gdm_w_array_num_cols+pba->index_gdm_int_w_dlog10a]
+                       +h*(t*t*(12.0*w2+(t*t-2)*ddw2)/24.0
+                           -(r*r-1)*(12.0*w1+(r*r-1)*ddw1)/24.0)
+                               - pba->gdm_integral_at_1 ;
+
+     }
+      
+      
     // if(pba->gdm_w_interpolation_method == gdm_cubic_arctanh){
     //   // Find interval that log10(a) lies in
     //   int gdm_interval_index;
@@ -697,14 +768,19 @@ int background_functions(
 
     pvecback[pba->index_bg_gdm_w]=w;
     pvecback[pba->index_bg_gdm_dw_over_dlna]= dw_dlog10a*log10(_E_);
-    // pvecback[pba->index_bg_gdm_d2w_over_dlna2]= d2w_dlog10a2*log10(_E_)*log10(_E_);
+    pvecback[pba->index_bg_gdm_d2w_over_dlna2]= d2w_dlog10a2*log10(_E_)*log10(_E_);
     rho_tot += rho_gdm;
     p_tot += w*rho_gdm;
     dp_dloga += (dw_dlog10a*log10(_E_)-3.0*w*(1+w))*rho_gdm;
 
     // book keeping, ended up with negative contributions for some w.
-    //rho_r += -3.*rho_gdm*(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+9.*w*(-1.-pvecback[pba->index_bg_gdm_dw_over_dlna]+w*w))/8;
-    //rho_m += rho_gdm*(1+(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+pvecback[pba->index_bg_gdm_dw_over_dlna])/3.+w*(-3.-3*pvecback[pba->index_bg_gdm_dw_over_dlna]-w+3.*w*w));
+    rho_r += -3.*rho_gdm*(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+9.*w*(-1.-pvecback[pba->index_bg_gdm_dw_over_dlna]+w*w))/8;
+    rho_m += rho_gdm*(1+(pvecback[pba->index_bg_gdm_d2w_over_dlna2]+pvecback[pba->index_bg_gdm_dw_over_dlna])/3.+w*(-3.-3*pvecback[pba->index_bg_gdm_dw_over_dlna]-w+3.*w*w));
+      
+    //printf("a: %e, int_w_dlog10a: %e, rho_gdm: %e, rho_tot: %e, rho_gdm/rho_tot: %e, w: %e\n",
+    //   a, int_w_dlog10a, rho_gdm, rho_tot, rho_gdm / rho_tot, w);
+      
+    //printf("int_w_dlog10a_at_1: %e\n", pba->gdm_integral_at_1);
 
  }
 
@@ -715,9 +791,9 @@ int background_functions(
 
   // /** generalized dark matter additions */
   // // Needs rho_total so delayed until here
-  // if (pba->has_gdm) {
-  //   pvecback[pba->index_bg_gdm_f] = pvecback[pba->index_bg_gdm_rho]/rho_tot;
-  // }
+  if (pba->has_gdm) {
+     pvecback[pba->index_bg_gdm_f] = pvecback[pba->index_bg_gdm_rho]/rho_tot;
+  }
 
   pvecback[pba->index_bg_H] = sqrt(rho_tot-pba->K/a/a);
 
@@ -1257,8 +1333,8 @@ int background_indices(
   class_define_index(pba->index_bg_gdm_rho,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_w,pba->has_gdm,index_bg,1);
   class_define_index(pba->index_bg_gdm_dw_over_dlna,pba->has_gdm,index_bg,1);
-  // class_define_index(pba->index_bg_gdm_f,pba->has_gdm,index_bg,1);
-  // class_define_index(pba->index_bg_gdm_d2w_over_dlna2,pba->has_gdm,index_bg,1);
+  class_define_index(pba->index_bg_gdm_f,pba->has_gdm,index_bg,1);
+  class_define_index(pba->index_bg_gdm_d2w_over_dlna2,pba->has_gdm,index_bg,1);
   // end of additions
   /*    */
 
@@ -2080,6 +2156,8 @@ int background_solve(
   /** - Determine output vector */
   loga_final = 0.; // with our conventions, loga is in fact log(a/a_0); we integrate until today, when log(a/a_0) = 0
   pba->bt_size = ppr->background_Nloga;
+  
+  printf("pba->bt_size: %d\n", pba->bt_size);
 
   /** - allocate background tables */
   class_alloc(pba->tau_table,pba->bt_size * sizeof(double),pba->error_message);
@@ -2669,14 +2747,14 @@ int background_output_titles(
   // Generalize dark matter additions
   if(pba->has_gdm){
     class_store_columntitle(titles,"(.)rho_gdm",_TRUE_);
-    //class_store_columntitle(titles,"f_gdm",_TRUE_);
+    class_store_columntitle(titles,"f_gdm",_TRUE_);
     class_store_columntitle(titles,"w_gdm",_TRUE_);
-    // class_store_columntitle(titles,"(.)rho_gdm_ff",_TRUE_);
-    // class_store_columntitle(titles,"(.)rho_gdm_r",_TRUE_);
-    // class_store_columntitle(titles,"(.)rho_gdm_d",_TRUE_);
-    // class_store_columntitle(titles,"(.)rho_gdm_lamda",_TRUE_);
-    // class_store_columntitle(titles,"dw_gdm/dlna",_TRUE_);
-    // class_store_columntitle(titles,"int_w_dlna",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_ff",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_r",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_d",_TRUE_);
+    class_store_columntitle(titles,"(.)rho_gdm_lamda",_TRUE_);
+    class_store_columntitle(titles,"dw_gdm/dlna",_TRUE_);
+    class_store_columntitle(titles,"int_w_dlna",_TRUE_);
   }
 
   // End of additions
@@ -2760,10 +2838,10 @@ int background_output_data(
     if (pba->has_gdm) {
       class_store_double(dataptr,pvecback[pba->index_bg_gdm_rho],_TRUE_,storeidx);
       class_store_double(dataptr,pvecback[pba->index_bg_gdm_w],_TRUE_,storeidx);
-      // double rho_gdm = pvecback[pba->index_bg_gdm_rho];
-      // double w = pvecback[pba->index_bg_gdm_w];
-      // double dw_over_dlna = pvecback[pba->index_bg_gdm_dw_over_dlna];
-      // double d2w_over_dlna2 = pvecback[pba->index_bg_gdm_d2w_over_dlna2];
+      //double rho_gdm = pvecback[pba->index_bg_gdm_rho];
+      //double w = pvecback[pba->index_bg_gdm_w];
+      //double dw_over_dlna = pvecback[pba->index_bg_gdm_dw_over_dlna];
+      //double d2w_over_dlna2 = pvecback[pba->index_bg_gdm_d2w_over_dlna2];
       // class_store_double(dataptr,pvecback[pba->index_bg_gdm_f],_TRUE_,storeidx);
       // class_store_double(dataptr,rho_gdm*(d2w_over_dlna2-2.*dw_over_dlna+3.*w*(-1.-3.*dw_over_dlna+2.*w+3.*w*w))/12.,_TRUE_,storeidx);
       // class_store_double(dataptr,-3.*rho_gdm*(d2w_over_dlna2+9.*w*(-1.-dw_over_dlna+w*w))/8.,_TRUE_,storeidx);

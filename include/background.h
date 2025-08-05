@@ -347,6 +347,8 @@ struct background
   int     gdm_num_in_knots;    /**< the number knots of delta(log(a)) provided */
   double  *gdm_log10a_vals;    /**< an array of log10(a) values used as independent knots for w(log10(a)) */
   double  *gdm_w_array;        /**< an array of length (gdm_num_in_knots)*3 stores (w(log10(a)),w'(log10(a)),w''(log10(a)), int w dlog10 a) */
+  int gdm_log10a_vals_size; // size of gdm_log10a_vals
+  double gdm_integral_at_1; // to store integral at log10(a) = 1
 
   //tanh modulated spline
   int     index_gdm_log10a_super;          /**< the index where the super sampled log10a values for the spline are stored */
@@ -368,14 +370,19 @@ struct background
   double  Omega0_gdm;          /** the value of Omega_0_gdm */
 
   int     index_bg_gdm_rho;    /**< index for storage of energy dendisty of the Generalized dark matter fluid */
-  // int     index_bg_gdm_f;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_f;  /**< index for storage of the Generalized dark matter parameter of the Generalized dark matter fluid */
   int     index_bg_gdm_w;      /**< index for storage of the state parameter of the Generalized dark matter fluid */
   int     index_bg_gdm_dw_over_dlna;      /**< index for storage of the derivative of the equation of state parameter of the Generalized dark matter fluid */
-  // int     index_bg_gdm_d2w_over_dlna2;    /**< index for storage of the 2nd derivative of the equation of state parameter of the Generalized dark matter fluid */
+  int     index_bg_gdm_d2w_over_dlna2;    /**< index for storage of the 2nd derivative of the equation of state parameter of the Generalized dark matter fluid */
 
   short   has_nap_gdm;        /**<  include non-adiabatic pressure? (note we use the generalized dark matter model of W. Hu) */
   double  gdm_c_eff2;          /**<  the rest frame speed of sound */
   double  gdm_c_vis2;          /**<  the viscosity parameter */
+    
+  double *w_array; 
+  double *dw_dlog10a_array; 
+  double *d2w_dlog10a2_array;
+  double *int_w_dlog10a_array; 
 
   //@}
 
@@ -465,6 +472,8 @@ extern "C" {
                            enum vecback_format return_format,
                            double * pvecback
                            );
+    
+  int find_index_in_loga_table(double * loga_table, int size, double log10a);
 
   int background_w_fld(
                        struct background * pba,

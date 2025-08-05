@@ -35,6 +35,10 @@
 #include "hyrectools.h"
 #include "hydrogen.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 
 /***********************************************************************************************************
 Some constants appropriately rescaled for different values of the fine-structure constant and electron mass
